@@ -18,7 +18,7 @@ def compute_results(ss_variables, index_to_run, total_to_train, constraints, pat
 
 
 if __name__ == "__main__":
-    mdp_simulator.config.FOLDER_NAME = "./UAV_v02"
+    mdp_simulator.config.FOLDER_NAME = "./RescueRobot"
     mdp_simulator.config.DEBUG_LEVEL = enums.LogTypes.ERROR
 
     if config.MAX_SAMPLES is not None:
