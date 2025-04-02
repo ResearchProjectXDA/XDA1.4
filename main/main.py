@@ -65,10 +65,10 @@ if __name__ == '__main__':
     # evaluate adaptations
     evaluate = True
 
-    ds = pd.read_csv('../datasets/uavv3.csv')
-    featureNames = ['formation', 'flying_speed', 'countermeasure', 'weather', 'day_time', 'threat_range', '#threats'] #uav
-    # featureNames = ['cruise speed','image resolution','illuminance','controls responsiveness','power',
-    # 'smoke intensity','obstacle size','obstacle distance','firm obstacle'] #robot
+    ds = pd.read_csv('../datasets/dataset500.csv')
+    # featureNames = ['formation', 'flying_speed', 'countermeasure', 'weather', 'day_time', 'threat_range', '#threats'] #uav
+    featureNames = ['cruise speed','image resolution','illuminance','controls responsiveness','power',
+     'smoke intensity','obstacle size','obstacle distance','firm obstacle'] #robot
     #featureNames = ['car_speed','p_x','p_y','orientation','weather','road_shape'] #drive
     controllableFeaturesNames = featureNames[0:3]
     externalFeaturesNames = featureNames[3:7]
@@ -80,9 +80,9 @@ if __name__ == '__main__':
     optimizationDirections = [1, 1, -1]
 
     #reqs = ["req_0", "req_1", "req_2"] #drive
-    # reqs = ["req_0", "req_1", "req_2", "req_3] #robot
-    reqs = ["req_0", "req_1", "req_2", "req_3", "req_4",
-            "req_5", "req_6", "req_7", "req_8", "req_9", "req_10", "req_11"] #uav
+    reqs = ["req_0", "req_1", "req_2", "req_3"] #robot
+    # reqs = ["req_0", "req_1", "req_2", "req_3", "req_4",
+            # "req_5", "req_6", "req_7", "req_8", "req_9", "req_10", "req_11"] #uav
     n_reqs = len(reqs)
     n_neighbors = 10
     n_startingSolutions = 10
@@ -106,7 +106,7 @@ if __name__ == '__main__':
                                      np.ravel(y_test.loc[:, req])))
         print("=" * 100)
 
-    controllableFeatureDomains = np.array([[0, 1], [5.0, 50.0], [0, 1]])
+    controllableFeatureDomains = np.array([[0.0, 100.0], [0.0, 100.0], [0.0, 100.0]])
     discreteIndices = [0, 2]
     # initialize planners
 
@@ -132,7 +132,7 @@ if __name__ == '__main__':
                                   controllableFeatureIndices, controllableFeatureDomains, optimizationScore,
                                   successScore,
                                   pop_size,
-                                  discreteIndices, 12, [0.8, 0.8, 0.8,0.8, 0.8, 0.8,0.8, 0.8, 0.8,0.8, 0.8, 0.8])
+                                  discreteIndices, 4, [0.8, 0.8, 0.8,0.8])
 
     RandomPlanner = RandomPlanner(controllableFeatureIndices, controllableFeatureDomains, discreteIndices, models,
                                   optimizationScore)
