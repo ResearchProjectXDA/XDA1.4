@@ -178,7 +178,7 @@ if __name__ == '__main__':
     for f in files:
         os.remove(f)
 
-    testNum = 200
+    testNum = 10
     for k in range(1, testNum + 1):
         rowIndex = k - 1
         row = X_test.iloc[rowIndex, :].to_numpy()
