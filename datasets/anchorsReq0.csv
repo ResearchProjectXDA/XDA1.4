@@ -58,3 +58,63 @@ Anchor: b'firm obstacle' = 1.0 AND b'image resolution' > 51.33 AND b'illuminance
 Precision: 1.00
 Coverage: 0.02
 
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'power' > 23.00 AND b'cruise speed' <= 71.28 AND b'image resolution' > 23.99 AND b'smoke intensity' <= 49.24 AND b'obstacle distance' <= 43.80
+Precision: 0.97
+Coverage: 0.06
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'image resolution' > 75.39 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'illuminance' > 51.56 AND b'smoke intensity' <= 49.24
+Precision: 0.98
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'power' > 23.00 AND b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND b'image resolution' > 23.99
+Precision: 0.95
+Coverage: 0.08
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'cruise speed' <= 22.33 AND b'power' > 23.00 AND b'smoke intensity' <= 74.25 AND b'image resolution' > 23.99
+Precision: 0.96
+Coverage: 0.05
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'image resolution' > 75.39 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'smoke intensity' <= 49.24 AND b'illuminance' > 27.51
+Precision: 0.96
+Coverage: 0.02
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'smoke intensity' <= 23.26 AND b'image resolution' > 51.33 AND 27.51 < b'illuminance' <= 75.57
+Precision: 0.98
+Coverage: 0.04
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'image resolution' > 75.39 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'obstacle distance' > 21.50
+Precision: 0.97
+Coverage: 0.04
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'image resolution' > 23.99 AND b'illuminance' > 27.51
+Precision: 0.95
+Coverage: 0.03
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'smoke intensity' <= 23.26 AND b'cruise speed' <= 71.28 AND b'image resolution' > 23.99 AND b'illuminance' > 27.51
+Precision: 0.96
+Coverage: 0.06
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'image resolution' > 51.33 AND b'illuminance' > 75.57 AND b'obstacle distance' > 43.80
+Precision: 0.95
+Coverage: 0.03
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'cruise speed' <= 22.33 AND b'power' > 23.00 AND b'smoke intensity' <= 23.26 AND b'image resolution' > 23.99
+Precision: 0.97
+Coverage: 0.02
+
+Prediction: b'True'
+Anchor: b'firm obstacle' = 1.0 AND b'image resolution' > 51.33 AND b'illuminance' > 75.57 AND b'power' > 77.25
+Precision: 1.00
+Coverage: 0.02
+
