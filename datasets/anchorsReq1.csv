@@ -244,3 +244,183 @@ Anchor: b'obstacle size' > 49.35 AND b'cruise speed' <= 44.79 AND b'power' > 77.
 Precision: 0.42
 Coverage: 0.00
 
+Prediction: b'False'
+Anchor: b'cruise speed' > 44.79 AND b'firm obstacle' = 1.0
+Precision: 0.99
+Coverage: 0.25
+
+Prediction: b'True'
+Anchor: b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND 50.00 < b'power' <= 77.25 AND 51.56 < b'illuminance' <= 75.57 AND b'obstacle size' > 71.67 AND b'controls responsiveness' > 43.98 AND b'image resolution' > 75.39 AND b'obstacle distance' > 70.59
+Precision: 0.43
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'illuminance' > 75.57 AND b'controls responsiveness' > 74.46 AND b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND b'power' > 23.00 AND b'obstacle size' > 27.78 AND 23.99 < b'image resolution' <= 51.33 AND b'obstacle distance' <= 70.59
+Precision: 0.30
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'illuminance' > 51.56 AND b'cruise speed' <= 22.33 AND b'smoke intensity' <= 23.26 AND b'power' > 77.25 AND b'controls responsiveness' > 22.45 AND b'obstacle size' > 49.35 AND 23.99 < b'image resolution' <= 51.33 AND b'obstacle distance' <= 70.59
+Precision: 0.51
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: 27.78 < b'obstacle size' <= 49.35 AND b'cruise speed' <= 44.79 AND 50.00 < b'power' <= 77.25 AND 27.51 < b'illuminance' <= 75.57 AND b'controls responsiveness' > 74.46 AND b'smoke intensity' <= 49.24 AND b'image resolution' > 75.39 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.38
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'illuminance' > 27.51 AND b'controls responsiveness' > 22.45 AND b'power' > 23.00 AND 43.80 < b'obstacle distance' <= 70.59 AND b'obstacle size' > 27.78 AND 23.99 < b'image resolution' <= 75.39
+Precision: 0.37
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'illuminance' > 51.56 AND b'cruise speed' <= 44.79 AND b'controls responsiveness' > 22.45 AND b'obstacle size' > 71.67 AND b'power' > 77.25 AND 21.50 < b'obstacle distance' <= 70.59 AND b'image resolution' > 23.99 AND b'smoke intensity' <= 74.25
+Precision: 0.33
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'controls responsiveness' > 74.46 AND b'obstacle size' > 49.35 AND b'illuminance' > 51.56 AND 23.99 < b'image resolution' <= 51.33 AND 43.80 < b'obstacle distance' <= 70.59
+Precision: 0.46
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'power' > 23.00 AND b'smoke intensity' <= 23.26 AND b'cruise speed' <= 71.28 AND b'controls responsiveness' > 22.45 AND 23.99 < b'image resolution' <= 51.33 AND b'illuminance' > 75.57 AND b'obstacle size' > 27.78 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.38
+Coverage: 0.01
+
+Prediction: b'False'
+Anchor: b'image resolution' <= 75.39 AND b'smoke intensity' > 49.24
+Precision: 0.98
+Coverage: 0.37
+
+Prediction: b'True'
+Anchor: b'cruise speed' <= 22.33 AND b'smoke intensity' <= 23.26 AND 50.00 < b'power' <= 77.25 AND b'illuminance' > 75.57 AND 23.99 < b'image resolution' <= 51.33 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.47
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'obstacle size' > 49.35 AND b'cruise speed' <= 44.79 AND b'power' > 77.25 AND b'controls responsiveness' > 22.45 AND 23.99 < b'image resolution' <= 75.39 AND b'smoke intensity' <= 49.24 AND b'illuminance' > 75.57 AND 21.50 < b'obstacle distance' <= 43.80
+Precision: 0.42
+Coverage: 0.00
+
+Prediction: b'False'
+Anchor: b'cruise speed' > 44.79 AND b'firm obstacle' = 1.0
+Precision: 0.99
+Coverage: 0.25
+
+Prediction: b'True'
+Anchor: b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND 50.00 < b'power' <= 77.25 AND 51.56 < b'illuminance' <= 75.57 AND b'obstacle size' > 71.67 AND b'controls responsiveness' > 43.98 AND b'image resolution' > 75.39 AND b'obstacle distance' > 70.59
+Precision: 0.43
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'illuminance' > 75.57 AND b'controls responsiveness' > 74.46 AND b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND b'power' > 23.00 AND b'obstacle size' > 27.78 AND 23.99 < b'image resolution' <= 51.33 AND b'obstacle distance' <= 70.59
+Precision: 0.30
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'illuminance' > 51.56 AND b'cruise speed' <= 22.33 AND b'smoke intensity' <= 23.26 AND b'power' > 77.25 AND b'controls responsiveness' > 22.45 AND b'obstacle size' > 49.35 AND 23.99 < b'image resolution' <= 51.33 AND b'obstacle distance' <= 70.59
+Precision: 0.51
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: 27.78 < b'obstacle size' <= 49.35 AND b'cruise speed' <= 44.79 AND 50.00 < b'power' <= 77.25 AND 27.51 < b'illuminance' <= 75.57 AND b'controls responsiveness' > 74.46 AND b'smoke intensity' <= 49.24 AND b'image resolution' > 75.39 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.38
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'illuminance' > 27.51 AND b'controls responsiveness' > 22.45 AND b'power' > 23.00 AND 43.80 < b'obstacle distance' <= 70.59 AND b'obstacle size' > 27.78 AND 23.99 < b'image resolution' <= 75.39
+Precision: 0.37
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'illuminance' > 51.56 AND b'cruise speed' <= 44.79 AND b'controls responsiveness' > 22.45 AND b'obstacle size' > 71.67 AND b'power' > 77.25 AND 21.50 < b'obstacle distance' <= 70.59 AND b'image resolution' > 23.99 AND b'smoke intensity' <= 74.25
+Precision: 0.33
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'controls responsiveness' > 74.46 AND b'obstacle size' > 49.35 AND b'illuminance' > 51.56 AND 23.99 < b'image resolution' <= 51.33 AND 43.80 < b'obstacle distance' <= 70.59
+Precision: 0.46
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'power' > 23.00 AND b'smoke intensity' <= 23.26 AND b'cruise speed' <= 71.28 AND b'controls responsiveness' > 22.45 AND 23.99 < b'image resolution' <= 51.33 AND b'illuminance' > 75.57 AND b'obstacle size' > 27.78 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.38
+Coverage: 0.01
+
+Prediction: b'False'
+Anchor: b'image resolution' <= 75.39 AND b'smoke intensity' > 49.24
+Precision: 0.98
+Coverage: 0.37
+
+Prediction: b'True'
+Anchor: b'cruise speed' <= 22.33 AND b'smoke intensity' <= 23.26 AND 50.00 < b'power' <= 77.25 AND b'illuminance' > 75.57 AND 23.99 < b'image resolution' <= 51.33 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.47
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'obstacle size' > 49.35 AND b'cruise speed' <= 44.79 AND b'power' > 77.25 AND b'controls responsiveness' > 22.45 AND 23.99 < b'image resolution' <= 75.39 AND b'smoke intensity' <= 49.24 AND b'illuminance' > 75.57 AND 21.50 < b'obstacle distance' <= 43.80
+Precision: 0.42
+Coverage: 0.00
+
+Prediction: b'False'
+Anchor: b'cruise speed' > 44.79 AND b'firm obstacle' = 1.0
+Precision: 0.99
+Coverage: 0.25
+
+Prediction: b'True'
+Anchor: b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND 50.00 < b'power' <= 77.25 AND 51.56 < b'illuminance' <= 75.57 AND b'obstacle size' > 71.67 AND b'controls responsiveness' > 43.98 AND b'image resolution' > 75.39 AND b'obstacle distance' > 70.59
+Precision: 0.43
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'illuminance' > 75.57 AND b'controls responsiveness' > 74.46 AND b'cruise speed' <= 44.79 AND b'smoke intensity' <= 49.24 AND b'power' > 23.00 AND b'obstacle size' > 27.78 AND 23.99 < b'image resolution' <= 51.33 AND b'obstacle distance' <= 70.59
+Precision: 0.30
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'illuminance' > 51.56 AND b'cruise speed' <= 22.33 AND b'smoke intensity' <= 23.26 AND b'power' > 77.25 AND b'controls responsiveness' > 22.45 AND b'obstacle size' > 49.35 AND 23.99 < b'image resolution' <= 51.33 AND b'obstacle distance' <= 70.59
+Precision: 0.51
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: 27.78 < b'obstacle size' <= 49.35 AND b'cruise speed' <= 44.79 AND 50.00 < b'power' <= 77.25 AND 27.51 < b'illuminance' <= 75.57 AND b'controls responsiveness' > 74.46 AND b'smoke intensity' <= 49.24 AND b'image resolution' > 75.39 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.38
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'illuminance' > 27.51 AND b'controls responsiveness' > 22.45 AND b'power' > 23.00 AND 43.80 < b'obstacle distance' <= 70.59 AND b'obstacle size' > 27.78 AND 23.99 < b'image resolution' <= 75.39
+Precision: 0.37
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'illuminance' > 51.56 AND b'cruise speed' <= 44.79 AND b'controls responsiveness' > 22.45 AND b'obstacle size' > 71.67 AND b'power' > 77.25 AND 21.50 < b'obstacle distance' <= 70.59 AND b'image resolution' > 23.99 AND b'smoke intensity' <= 74.25
+Precision: 0.33
+Coverage: 0.01
+
+Prediction: b'True'
+Anchor: b'smoke intensity' <= 23.26 AND b'cruise speed' <= 44.79 AND b'power' > 23.00 AND b'controls responsiveness' > 74.46 AND b'obstacle size' > 49.35 AND b'illuminance' > 51.56 AND 23.99 < b'image resolution' <= 51.33 AND 43.80 < b'obstacle distance' <= 70.59
+Precision: 0.46
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'power' > 23.00 AND b'smoke intensity' <= 23.26 AND b'cruise speed' <= 71.28 AND b'controls responsiveness' > 22.45 AND 23.99 < b'image resolution' <= 51.33 AND b'illuminance' > 75.57 AND b'obstacle size' > 27.78 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.38
+Coverage: 0.01
+
+Prediction: b'False'
+Anchor: b'image resolution' <= 75.39 AND b'smoke intensity' > 49.24
+Precision: 0.98
+Coverage: 0.37
+
+Prediction: b'True'
+Anchor: b'cruise speed' <= 22.33 AND b'smoke intensity' <= 23.26 AND 50.00 < b'power' <= 77.25 AND b'illuminance' > 75.57 AND 23.99 < b'image resolution' <= 51.33 AND 21.50 < b'obstacle distance' <= 70.59
+Precision: 0.47
+Coverage: 0.00
+
+Prediction: b'True'
+Anchor: b'obstacle size' > 49.35 AND b'cruise speed' <= 44.79 AND b'power' > 77.25 AND b'controls responsiveness' > 22.45 AND 23.99 < b'image resolution' <= 75.39 AND b'smoke intensity' <= 49.24 AND b'illuminance' > 75.57 AND 21.50 < b'obstacle distance' <= 43.80
+Precision: 0.42
+Coverage: 0.00
+
