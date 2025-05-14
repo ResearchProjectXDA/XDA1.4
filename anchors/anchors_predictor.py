@@ -18,7 +18,7 @@ class AnchorsPredictor:
         """
         self.anchors = anchors
 
-    def __get_anchor(a)-> tuple:
+    def __get_anchor(self, a)-> tuple:
         """
         Function to separate the name of the feature from the ranges.
 
@@ -39,7 +39,7 @@ class AnchorsPredictor:
         return quoted_part, rest
 
     
-    def __parse_range(expr: str):
+    def __parse_range(self, expr: str):
         """
         Function to parse the range of the anchor.
 
@@ -115,7 +115,7 @@ class AnchorsPredictor:
 
         raise ValueError(f"Unrecognized format: {expr}")
 
-    def __inside(val, interval) -> bool:
+    def __inside(self, val, interval) -> bool:
         """
         Function to check if a value is inside an interval.
         Parameters
@@ -165,6 +165,7 @@ class AnchorsPredictor:
                 out[i] = 1
                 for nk,k in enumerate(feature_names):
                     if k in thresholds[j]:
+                        print(input[i,nk], thresholds[j][k])
                         if not (self.__inside(input[i,nk], thresholds[j][k])):
                             flag = False
                             out[i] = 0
@@ -203,24 +204,42 @@ class AnchorsPredictor:
         return coverage/(100**len(feat_names))
 
 
-    def grid_points_in_RN(self, explanations, feature_names, delta, STEP, min_vals, max_vals):
+    def __grid_points_in_RN(self, explanations, feature_names, delta, STEP, min_vals, max_vals):
         variables = []
         for i in range(len(feature_names)):
-            variables.append(np.linspace(min_vals[i], max_vals[i], delta + STEP))
-        grid_points = np.meshgrid(*variables, indexing='ij')
-        for grid_point in grid_points:
-            out = self.classify(grid_point, explanations, feature_names)
-            if out == 1:
-                grid_points.remove(grid_point)
+            variables.append(np.arange(min_vals[i]+STEP, max_vals[i], delta))
+        grid_points = np.meshgrid(variables, indexing='ij')
+        grid_points = np.array(grid_points, dtype=object)
+        print(grid_points)
+        out = self.classify(grid_points, explanations, feature_names)
+        
+        idx_del = np.where(out == 0)
+        np.delete(grid_points, idx_del)
         return grid_points
+    
+    # def __grid_points_in_RN(self, explanations, feature_names, delta, STEP, min_vals, max_vals):
+    #     grid_points = [[x1, x2, x3, x4] for x1 in np.arange(0, 100, delta) 
+    #                 for x2 in np.arange(0, 100, delta) 
+    #                 for x3 in np.arange(0, 100, delta) 
+    #                 for x4 in np.arange(0, 100, delta)]
+    #     grid_points = np.array(grid_points, dtype=object)
+    #     print(grid_points)
+    #     out = self.classify(grid_points, explanations, feature_names)
+        
+    #     idx_del = np.where(out == 0)
+    #     np.delete(grid_points, idx_del)
+    #     return grid_points
 
-    def evaluate_grid_points(grid_points, models, positive_samples, req_names, ):
+    def __evaluate_grid_points(self, grid_points, models, positive_samples, req_names, min_idx_cf= 0, max_idx_cf = 3):
         merged_points = []
         for grid_point in grid_points:
             for point in positive_samples:
-                merged_point = point[0:3].append(grid_point)
+                print("point:",point)
+                print("grid_point:",grid_point)
+                merged_point = np.concatenate((point[min_idx_cf:max_idx_cf], grid_point))
                 merged_points.append(merged_point)
-        print(merged_points.shape)
+                print("merged_point:", merged_point)
+        print(len(merged_points))
         
         for r, req in enumerate(req_names):
             print(f"___________Requirement {req}___________")
@@ -233,6 +252,37 @@ class AnchorsPredictor:
                 output *= tmp_output
 
         models_positives = np.where(output != 0)[0]
+        return merged_points[models_positives]
 
-    #def create_new_anchors(positive_samples, models, req_number):
+    def __create_new_anchors(self, explainers, models_positives, models, req_number, explanations):
+        for j, p_sample in enumerate(models_positives):
+            intersected_exp = {}
+            for i in range(req_number):
+                #get the sample
+                sample = datasets[i].train[p_sample]
+                #explain the sample
+                exp = explainers[i].explain_instance(sample, models[i].predict, threshold=0.95)
+                #get the textual explanation
+                exp = exp.names()
+                #transform the textual explanations in an interval
+                for boundings in exp:
+                    quoted, rest = self.get_anchor(boundings)            
+                    if(quoted not in intersected_exp):
+                        intersected_exp[quoted] = self.__parse_range(rest)
+                    else:
+                        intersected_exp[quoted] = self.intersect(intersected_exp[quoted], self.__parse_range(rest))
+
+        #prepare the data structure
+        explanations.append(intersected_exp)
+        
+        return explanations
     
+    def augment_coverage(self, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 10, STEP = 5, threshold = 0.5):
+        coverage = self.coverage(explanation, feature_names)
+        while(coverage < threshold):
+            grid_points = self.__grid_points_in_RN(explanation, feature_names, delta, STEP, min_vals, max_vals)
+            model_positives = self.__evaluate_grid_points(grid_points, models, positive_samples, req_names, min_idx_cf, max_idx_cf)
+            explanation = self.__create_new_anchors(explainers, model_positives, models, req_number, explanation)
+            coverage = self.coverage(explanation, feature_names)
+            STEP += STEP
+        return explanation
