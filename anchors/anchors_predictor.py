@@ -203,40 +203,36 @@ class AnchorsPredictor:
         return coverage/(100**len(feat_names))
 
 
-def grid_points_in_R4(explanations, feature_names, delta, STEP):
-    grid_points = [(x1, x2, x3, x4) for x1 in np.arange(0, 100, delta + STEP) for x2 in np.arange(0, 100, delta + STEP) for x3 in np.arange(0, 100, delta + STEP) for x4 in np.arange(0, 100, delta + STEP)]
-    for grid_point in grid_points:
-        not_in = False
-        for explanation in explanations:
-            for i in range(len(feature_names)):
-                if feature_names[i] in explanation:
-                    interval = explanation[feature_names[i]]
-                    if not AnchorsPredictor.__inside(grid_point[i], interval):
-                        not_in = True
-        if not(not_in):
-            grid_points.remove(grid_point)
-    
-    return grid_points
+    def grid_points_in_RN(self, explanations, feature_names, delta, STEP, min_vals, max_vals):
+        variables = []
+        for i in range(len(feature_names)):
+            variables.append(np.linspace(min_vals[i], max_vals[i], delta + STEP))
+        grid_points = np.meshgrid(*variables, indexing='ij')
+        for grid_point in grid_points:
+            out = self.classify(grid_point, explanations, feature_names)
+            if out == 1:
+                grid_points.remove(grid_point)
+        return grid_points
 
-def evaluate_grid_points(grid_points, models, positive_samples, req_names):
-    merged_points = []
-    for grid_point in grid_points:
-        for point in positive_samples:
-            merged_point = point[0:3].append(grid_point)
-            merged_points.append(merged_point)
-    print(merged_points.shape)
-    
-    for r, req in enumerate(req_names):
-        print(f"___________Requirement {req}___________")
+    def evaluate_grid_points(grid_points, models, positive_samples, req_names, ):
+        merged_points = []
+        for grid_point in grid_points:
+            for point in positive_samples:
+                merged_point = point[0:3].append(grid_point)
+                merged_points.append(merged_point)
+        print(merged_points.shape)
         
-        #classify the samples with the model
-        tmp_output = models[r].predict(merged_points)
-        if(r == 0):
-            output = tmp_output
-        else:
-            output *= tmp_output
+        for r, req in enumerate(req_names):
+            print(f"___________Requirement {req}___________")
+            
+            #classify the samples with the model
+            tmp_output = models[r].predict(merged_points)
+            if(r == 0):
+                output = tmp_output
+            else:
+                output *= tmp_output
 
-    models_positives = np.where(output != 0)[0]
+        models_positives = np.where(output != 0)[0]
 
-#def create_new_anchors(positive_samples, models, req_number):
+    #def create_new_anchors(positive_samples, models, req_number):
     
