@@ -250,7 +250,6 @@ class AnchorsPredictor:
         
         idx_del = np.where(out == 1)[0]
         grid_points = np.delete(grid_points, idx_del, axis=0)
-        print("grid_point:", grid_points[0])
         return grid_points
     
     # def __grid_points_in_RN(self, explanations, feature_names, delta, STEP, min_vals, max_vals):
@@ -290,7 +289,9 @@ class AnchorsPredictor:
 
         models_positives = np.where(output != 0)[0]
         merged_points = np.array(merged_points)
-        return merged_points[models_positives]
+        positive_merged_points = merged_points[models_positives]
+        print("positive_merged_points:", positive_merged_points.shape)
+        return positive_merged_points
 
     def __create_new_anchors(self, datasets, explainers, models_positives, models, req_number, explanations):
         #print("models_positives:", models_positives[0])
@@ -317,7 +318,7 @@ class AnchorsPredictor:
         
         return explanations
     
-    def augment_coverage(self, datasets, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 10, STEP = 5, threshold = 0.5):
+    def augment_coverage(self, datasets, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 20, STEP = 20, threshold = 0.5):
         coverage = self.coverage(explanation, feature_names)
         while(coverage < threshold):
             grid_points = self.__grid_points_in_RN(explanation, feature_names, delta, STEP, min_vals, max_vals)
