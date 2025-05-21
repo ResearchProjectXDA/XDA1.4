@@ -327,3 +327,115 @@ class AnchorsPredictor:
             coverage = self.coverage(explanation, feature_names)
             STEP += STEP
         return explanation
+    
+    def min_dist_polytope(self, x, explanations_table, controllable_features, observable_features): #feature names must be only controllable features if observable features are "satisfied" otherwise
+    
+        print("x: ", x)
+        min_dist_controllable = np.inf
+        min_dist_index_controllable = -1
+
+        min_dist_observable = np.inf
+        min_dist_index_observable = -1
+
+        contr_f_dist = np.zeros(len(explanations_table))
+        obs_f_dist = np.zeros(len(explanations_table))
+
+        print("explanations_table: ", len(explanations_table))
+        for i in range(len(explanations_table)):
+            print("i: ", i)
+            for j, f_name in enumerate(controllable_features):
+                a, b = explanations_table[i][f_name][0], explanations_table[i][f_name][1]
+                #TODO: METTERE QUESTO NELLE FUNZIONI OFFLINE
+                if a == -inf:
+                    a = 0
+                if b == inf:
+                    b = 100
+                print("a: ", a)
+                print("b: ", b)
+                print("x[j]: ", x[j])
+                if(x[j] < a):
+                    d = (a - x[j]) ** 2
+                    contr_f_dist[i] += d
+                    print("contr_f_dist[i]: ", contr_f_dist[i])
+                    if(contr_f_dist[i] >= min_dist_controllable):
+                        print("distanza maggiore della minima controllable")
+                        break
+                elif(x[j] > b):
+                    d = (b - x[j]) ** 2
+                    contr_f_dist[i] += d
+                    print("contr_f_dist[i]: ", contr_f_dist[i])
+                    if(contr_f_dist[i] >= min_dist_controllable):
+                        print("distanza maggiore della minima controllable")
+                        break
+                #elif a <= x[j] <= b:
+                #    dist[i] += 0
+            if(contr_f_dist[i] < min_dist_controllable):
+                min_dist_controllable = contr_f_dist[i]
+                min_dist_index_controllable = i
+                print("min_dist_controllable: ", min_dist_controllable)
+                print("min_dist_index_controllable: ", min_dist_index_controllable)
+            print("finito controllable features")
+            print("contr_f_dist: ", contr_f_dist)
+
+
+            for j, f_name in enumerate(observable_features):
+                print("f_name", f_name,explanations_table[i])
+                a, b = explanations_table[i][f_name][0], explanations_table[i][f_name][1]
+                if a == -inf:
+                    a = 0
+                if b == inf:
+                    b = 100
+                print("a obs: ", a)
+                print("b obs: ", b)
+                print("x[j] obs: ", x[j])
+
+                if(x[j] < a):
+                    d = (a - x[j]) ** 2
+                    #dist[i] += d
+                    obs_f_dist[i] += d
+                    print("obs_f_dist[i]: ", obs_f_dist[i])
+                    if(obs_f_dist[i] >= min_dist_observable):
+                        print("distanza maggiore della minima observable")
+                        break
+                elif(x[j] > b):
+                    d = (b - x[j]) ** 2
+                    #dist[i] += d
+                    obs_f_dist[i] += d
+                    print("obs_f_dist[i]: ", obs_f_dist[i])
+                    if(obs_f_dist[i] >= min_dist_observable):
+                        print("distanza maggiore della minima observable")
+                        break
+                #elif a <= x[j] <= b:
+                #    dist[i] += 0
+            if(obs_f_dist[i] < min_dist_observable):
+                min_dist_observable = obs_f_dist[i]
+                min_dist_index_observable = i
+                print("min_dist_observable: ", min_dist_observable)
+                print("min_dist_index_observable: ", min_dist_index_observable)
+            print("finito observable features")
+            print("obs_f_dist: ", obs_f_dist)
+
+        return contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable
+
+
+    def evaluate_sample(self, sample, explanation, controllable_features, observable_features):
+        print("Sample: ", sample)
+        contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, explanation, controllable_features, observable_features)
+        print("min_dist_controllable: ", min_dist_controllable)
+        print("min_dist_index_controllable: ", min_dist_index_controllable)
+        print("min_dist_observable: ", min_dist_observable)
+        print("min_dist_index_observable: ", min_dist_index_observable)
+
+        if obs_f_dist[min_dist_index_observable] == 0:
+            print("The sample is in the polytope for the observable features!")
+            if contr_f_dist[min_dist_index_observable] == 0:
+                print("The sample is in the polytope for the controllable features too!")
+            else:
+                print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
+                polytope = explanation[min_dist_index_observable]
+                print("Polytope: ", polytope)   
+        else:
+            print("The sample is not in the polytope for the observable features!")
+            print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
+        return min_dist_index_controllable, min_dist_index_observable
+            
