@@ -330,7 +330,7 @@ class AnchorsPredictor:
     
     def min_dist_polytope(self, x, explanations_table, controllable_features, observable_features): #feature names must be only controllable features if observable features are "satisfied" otherwise
     
-        print("x: ", x)
+        #print("x: ", x)
         min_dist_controllable = np.inf
         min_dist_index_controllable = -1
 
@@ -340,9 +340,9 @@ class AnchorsPredictor:
         contr_f_dist = np.zeros(len(explanations_table))
         obs_f_dist = np.zeros(len(explanations_table))
 
-        print("explanations_table: ", len(explanations_table))
+        print("explanations_table lenght: ", len(explanations_table))
         for i in range(len(explanations_table)):
-            print("i: ", i)
+            #print("i: ", i)
             for j, f_name in enumerate(controllable_features):
                 a, b = explanations_table[i][f_name][0], explanations_table[i][f_name][1]
                 #TODO: METTERE QUESTO NELLE FUNZIONI OFFLINE
@@ -350,77 +350,86 @@ class AnchorsPredictor:
                     a = 0
                 if b == inf:
                     b = 100
-                print("a: ", a)
-                print("b: ", b)
-                print("x[j]: ", x[j])
+                #print("a: ", a)
+                #print("b: ", b)
+                #print("x[j]: ", x[j])
                 if(x[j] < a):
                     d = (a - x[j]) ** 2
                     contr_f_dist[i] += d
-                    print("contr_f_dist[i]: ", contr_f_dist[i])
+                    #print("contr_f_dist[i]: ", contr_f_dist[i])
                     if(contr_f_dist[i] >= min_dist_controllable):
-                        print("distanza maggiore della minima controllable")
+                        #print("distanza maggiore della minima controllable")
                         break
                 elif(x[j] > b):
                     d = (b - x[j]) ** 2
                     contr_f_dist[i] += d
-                    print("contr_f_dist[i]: ", contr_f_dist[i])
+                    #print("contr_f_dist[i]: ", contr_f_dist[i])
                     if(contr_f_dist[i] >= min_dist_controllable):
-                        print("distanza maggiore della minima controllable")
+                        #print("distanza maggiore della minima controllable")
                         break
                 #elif a <= x[j] <= b:
                 #    dist[i] += 0
             if(contr_f_dist[i] < min_dist_controllable):
                 min_dist_controllable = contr_f_dist[i]
                 min_dist_index_controllable = i
-                print("min_dist_controllable: ", min_dist_controllable)
-                print("min_dist_index_controllable: ", min_dist_index_controllable)
-            print("finito controllable features")
-            print("contr_f_dist: ", contr_f_dist)
+                #print("min_dist_controllable: ", min_dist_controllable)
+                #print("min_dist_index_controllable: ", min_dist_index_controllable)
+            #print("finito controllable features")
+            #print("contr_f_dist: ", contr_f_dist)
 
 
             for j, f_name in enumerate(observable_features): 
                 #NCF start from 3 not from 0, therefor we need to add 3 to the index
                 jj = j + 3
-                print("f_name", f_name,explanations_table[i])
+                #print("f_name", f_name,explanations_table[i])
                 a, b = explanations_table[i][f_name][0], explanations_table[i][f_name][1]
                 if a == -inf:
                     a = 0
                 if b == inf:
                     b = 100
-                print("a obs: ", a)
-                print("b obs: ", b)
-                print("x[j] obs: ", x[jj])
+                #print("a obs: ", a)
+                #print("b obs: ", b)
+                #print("x[j] obs: ", x[jj])
 
                 if(x[jj] < a):
                     d = (a - x[jj]) ** 2
                     #dist[i] += d
                     obs_f_dist[i] += d
-                    print("obs_f_dist[i]: ", obs_f_dist[i])
+                    #print("obs_f_dist[i]: ", obs_f_dist[i])
                     if(obs_f_dist[i] >= min_dist_observable):
-                        print("distanza maggiore della minima observable")
+                        #print("distanza maggiore della minima observable")
                         break
                 elif(x[jj] > b):
                     d = (b - x[jj]) ** 2
                     #dist[i] += d
                     obs_f_dist[i] += d
-                    print("obs_f_dist[i]: ", obs_f_dist[i])
+                    #print("obs_f_dist[i]: ", obs_f_dist[i])
                     if(obs_f_dist[i] >= min_dist_observable):
-                        print("distanza maggiore della minima observable")
+                        #print("distanza maggiore della minima observable")
                         break
                 #elif a <= x[j] <= b:
                 #    dist[i] += 0
             if(obs_f_dist[i] < min_dist_observable):
                 min_dist_observable = obs_f_dist[i]
                 min_dist_index_observable = i
-                print("min_dist_observable: ", min_dist_observable)
-                print("min_dist_index_observable: ", min_dist_index_observable)
-            print("finito observable features")
-            print("obs_f_dist: ", obs_f_dist)
+                #print("min_dist_observable: ", min_dist_observable)
+                #print("min_dist_index_observable: ", min_dist_index_observable)
+            #print("finito observable features")
+            #print("obs_f_dist: ", obs_f_dist)
+
+        #This adds the case in which there are muptile polytopes with the same distance, choose the one common to both
+        mask_controllable = np.where(contr_f_dist == 0)[0]
+        mask_observable = np.where(obs_f_dist == 0)[0]
+        for index in mask_observable:
+            if index in mask_controllable:
+                min_dist_index_observable = index
+                min_dist_index_controllable = index
+                break
 
         return contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable
 
 
-    def evaluate_sample(self, sample, explanation, controllable_features, observable_features):
+    def evaluate_sample(self, sample, explanation, controllable_features, observable_features, req_names, models):
         print("Sample: ", sample)
         contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, explanation, controllable_features, observable_features)
         print("min_dist_controllable: ", min_dist_controllable)
@@ -432,12 +441,70 @@ class AnchorsPredictor:
             print("The sample is in the polytope for the observable features!")
             if contr_f_dist[min_dist_index_observable] == 0:
                 print("The sample is in the polytope for the controllable features too!")
+                #Evaluate the sample with the model
+                for r, req in enumerate(req_names):
+                    print(f"___________Requirement {req}___________")
+                    
+                    #classify the samples with the model
+                    tmp_output = models[r].predict(sample.reshape(1, -1))
+                    print("tmp_output: ", tmp_output)
+                    if(r == 0):
+                        output = tmp_output
+                    else:
+                        output *= tmp_output
+                print("output: ", output)
             else:
                 print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
                 polytope = explanation[min_dist_index_observable]
-                print("Polytope: ", polytope)   
+                print("Polytope: ", polytope)
+
+                sample = self.go_inside_CF_given_polytope(sample, polytope, controllable_features, observable_features)
+                print("Sample after going inside: ", sample)
+                #check is its now inside the polytope
+                for i, f_name in enumerate(controllable_features):
+                    inside = self.__inside(sample[i], polytope[f_name])
+                    if not inside:
+                        print("sample not inside for feature: ", f_name)
+                        inside = False
+                for i, f_name in enumerate(observable_features):
+                    inside = self.__inside(sample[i+3], polytope[f_name])
+                    if not inside:
+                        print("sample not inside for feature: ", f_name)
+                        inside = False
+                if inside:
+                    print("The sample is now inside the polytope for the controllable features too!")
+                
+                #Evaluate the sample with the model
+                for r, req in enumerate(req_names):
+                    print(f"___________Requirement {req}___________")
+                    
+                    #classify the samples with the model
+                    tmp_output = models[r].predict(sample.reshape(1, -1))
+                    print("tmp_output: ", tmp_output)
+                    if(r == 0):
+                        output = tmp_output
+                    else:
+                        output *= tmp_output
+                print("output: ", output)
+
         else:
             print("The sample is not in the polytope for the observable features!")
             print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
         return min_dist_index_controllable, min_dist_index_observable
             
+
+    def go_inside_CF_given_polytope(self, sample, polytope, controllable_features, observable_features):
+        for i, f_name in enumerate(controllable_features):
+            a, b = polytope[f_name][0], polytope[f_name][1]
+            if a == -inf:
+                a = 0
+            if b == inf:
+                b = 100
+            print("a: ", a)
+            print("b: ", b)
+            print("x[j]: ", sample[i])
+            if(sample[i] < int(a)):
+                sample[i] = int(a)+1
+            elif(sample[i] > int(b)):
+                sample[i] = int(b)-1
+        return sample
