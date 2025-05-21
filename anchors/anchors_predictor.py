@@ -378,7 +378,9 @@ class AnchorsPredictor:
             print("contr_f_dist: ", contr_f_dist)
 
 
-            for j, f_name in enumerate(observable_features):
+            for j, f_name in enumerate(observable_features): 
+                #NCF start from 3 not from 0, therefor we need to add 3 to the index
+                jj = j + 3
                 print("f_name", f_name,explanations_table[i])
                 a, b = explanations_table[i][f_name][0], explanations_table[i][f_name][1]
                 if a == -inf:
@@ -387,18 +389,18 @@ class AnchorsPredictor:
                     b = 100
                 print("a obs: ", a)
                 print("b obs: ", b)
-                print("x[j] obs: ", x[j])
+                print("x[j] obs: ", x[jj])
 
-                if(x[j] < a):
-                    d = (a - x[j]) ** 2
+                if(x[jj] < a):
+                    d = (a - x[jj]) ** 2
                     #dist[i] += d
                     obs_f_dist[i] += d
                     print("obs_f_dist[i]: ", obs_f_dist[i])
                     if(obs_f_dist[i] >= min_dist_observable):
                         print("distanza maggiore della minima observable")
                         break
-                elif(x[j] > b):
-                    d = (b - x[j]) ** 2
+                elif(x[jj] > b):
+                    d = (b - x[jj]) ** 2
                     #dist[i] += d
                     obs_f_dist[i] += d
                     print("obs_f_dist[i]: ", obs_f_dist[i])
