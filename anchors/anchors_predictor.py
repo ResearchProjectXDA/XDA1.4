@@ -440,7 +440,7 @@ class AnchorsPredictor:
 
         return explanations
     
-    def augment_coverage(self, datasets, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 20, STEP = 20, threshold = 0.5):
+    def augment_coverage(self, datasets, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 40, STEP = 20, threshold = 0.5):
         """
             Incrementally augments the coverage of given explanations by generating new anchors 
             from grid points sampled within feature ranges until a specified coverage threshold is reached.
