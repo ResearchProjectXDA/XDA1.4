@@ -269,12 +269,12 @@ class AnchorsPredictor:
         merged_points = []
         for grid_point in grid_points:
             for point in positive_samples:
-                #print("point:", point)
-                #print("grid_point:", grid_point)
-                merged_point = np.concatenate((point[min_idx_cf:max_idx_cf+1], grid_point))
+                #print("point:", point.shape)
+                #print("grid_point:", grid_point.shape)
+                merged_point = np.concatenate((point[min_idx_cf:max_idx_cf], grid_point))
                 merged_point = np.concatenate((merged_point, [point[-1]]))
                 merged_points.append(merged_point)
-                #print("merged_point:", merged_point)
+                #print("merged_point:", merged_point.shape)
         print(len(merged_points))
         
         for r, req in enumerate(req_names):
@@ -316,13 +316,39 @@ class AnchorsPredictor:
         #prepare the data structure
         explanations.append(intersected_exp)
         
+        #TODO: feature names da passare come parametro
+        feature_names = ['cruise speed','image resolution','illuminance','controls responsiveness','power','smoke intensity','obstacle size','obstacle distance','firm obstacle']
+        missing = 0
+        explanations_reordered = []
+        for exp in explanations:
+            exp_reordered = {}
+            for k in feature_names:
+                if k in exp:
+                    exp_reordered[k] = exp[k]
+                else:
+                    exp_reordered[k] = (-inf, inf, False, False)
+                    print(k, "missing, added: ", exp_reordered[k])
+                    index = explanations.index(exp)
+                    missing = 1
+            if missing:
+                print(exp_reordered)
+                missing = 0
+            explanations_reordered.append(exp_reordered)
+        explanations = explanations_reordered    
+
         return explanations
     
     def augment_coverage(self, datasets, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 20, STEP = 20, threshold = 0.5):
-        coverage = self.coverage(explanation, feature_names)
+        coverage = self.coverage(explanation, feature_names) #This gives us the initial coverage from the current explanations
+        #Iterate until the coverage is greater than the threshold
         while(coverage < threshold):
             grid_points = self.__grid_points_in_RN(explanation, feature_names, delta, STEP, min_vals, max_vals)
+            print("grid_points:", grid_points.shape)
+            if grid_points.shape[0] == 0:
+                print("No grid points found, stopping augmentation.")
+                break
             model_positives = self.__evaluate_grid_points(grid_points, models, positive_samples, req_names, min_idx_cf, max_idx_cf)
+            print("model_positives:", model_positives.shape)
             explanation = self.__create_new_anchors(datasets, explainers, model_positives, models, req_number, explanation)
             coverage = self.coverage(explanation, feature_names)
             STEP += STEP
@@ -442,17 +468,22 @@ class AnchorsPredictor:
             if contr_f_dist[min_dist_index_observable] == 0:
                 print("The sample is in the polytope for the controllable features too!")
                 #Evaluate the sample with the model
+                outputs = np.zeros(len(req_names))
                 for r, req in enumerate(req_names):
                     print(f"___________Requirement {req}___________")
                     
-                    #classify the samples with the model
+                    #classify the samplsses with the model
                     tmp_output = models[r].predict(sample.reshape(1, -1))
                     print("tmp_output: ", tmp_output)
+                    outputs[r] = tmp_output
+                    #print("outputs: ", outputs)
                     if(r == 0):
                         output = tmp_output
                     else:
                         output *= tmp_output
                 print("output: ", output)
+                return contr_f_dist[min_dist_index_observable], obs_f_dist[min_dist_index_observable], sample, outputs
+
             else:
                 print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
                 polytope = explanation[min_dist_index_observable]
@@ -475,22 +506,39 @@ class AnchorsPredictor:
                     print("The sample is now inside the polytope for the controllable features too!")
                 
                 #Evaluate the sample with the model
+                outputs = np.zeros(len(req_names))
                 for r, req in enumerate(req_names):
                     print(f"___________Requirement {req}___________")
                     
                     #classify the samples with the model
                     tmp_output = models[r].predict(sample.reshape(1, -1))
                     print("tmp_output: ", tmp_output)
+                    outputs[r] = tmp_output
                     if(r == 0):
                         output = tmp_output
                     else:
                         output *= tmp_output
                 print("output: ", output)
+                contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, explanation, controllable_features, observable_features)
+                return contr_f_dist[min_dist_index_observable], obs_f_dist[min_dist_index_observable], sample, outputs
 
         else:
             print("The sample is not in the polytope for the observable features!")
             print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
-        return min_dist_index_controllable, min_dist_index_observable
+            #Evaluate the sample with the model
+            outputs = np.zeros(len(req_names))
+            for r, req in enumerate(req_names):
+                print(f"___________Requirement {req}___________")
+                
+                #classify the samplsses with the model
+                tmp_output = models[r].predict(sample.reshape(1, -1))
+                print("tmp_output: ", tmp_output)
+                outputs[r] = tmp_output
+                if(r == 0):
+                    output = tmp_output
+                else:
+                    output *= tmp_output
+            return contr_f_dist[min_dist_index_observable], obs_f_dist[min_dist_index_observable], sample, outputs
             
 
     def go_inside_CF_given_polytope(self, sample, polytope, controllable_features, observable_features):
@@ -503,8 +551,9 @@ class AnchorsPredictor:
             print("a: ", a)
             print("b: ", b)
             print("x[j]: ", sample[i])
-            if(sample[i] < int(a)):
-                sample[i] = int(a)+1
-            elif(sample[i] > int(b)):
-                sample[i] = int(b)-1
+            # if(sample[i] < int(a)):
+            #     sample[i] = int(a)+1
+            # elif(sample[i] > int(b)):
+            #     sample[i] = int(b)-1
+            sample[i] = (a+b)/2
         return sample
