@@ -779,7 +779,28 @@ class AnchorsPredictor:
         else:
             print("The sample is not in the polytope for the observable features!")
             print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
+            #Now we want to change the CF to get as close as possible to that polytope
+            polytope = explanation[min_dist_index_observable]
+            print("Polytope: ", polytope)
+
+            sample = self.go_inside_CF_given_polytope(sample, polytope, controllable_features, observable_features)
+            print("Sample after going closer: ", sample)
+
+            #check is its now inside the polytope for the CF
+            for i, f_name in enumerate(controllable_features):
+                inside = self.__inside(sample[i], polytope[f_name])
+                if not inside:
+                    print("sample not inside for feature: ", f_name)
+                    inside = False
+            for i, f_name in enumerate(observable_features):
+                inside = self.__inside(sample[i+3], polytope[f_name])
+                if not inside:
+                    print("sample not inside for feature: ", f_name)
+                    inside = False
+            if inside:
+                print("The sample is now inside the polytope for the controllable features!")
             #Evaluate the sample with the model
+            
             outputs = np.zeros(len(req_names))
             for r, req in enumerate(req_names):
                 print(f"___________Requirement {req}___________")
