@@ -8,6 +8,7 @@ import numpy as np
 from colorama import Fore, Style
 from sklearn.model_selection import train_test_split
 from CustomPlanner import CustomPlanner
+from AnchorsPlanner import AnchorsPlanner
 from model.ModelConstructor import constructModel
 import explainability_techniques.LIME as lime
 from NSGA3Planner import NSGA3Planner
@@ -65,7 +66,7 @@ if __name__ == '__main__':
     # evaluate adaptations
     evaluate = True
 
-    ds = pd.read_csv('../datasets/dataset500.csv')
+    ds = pd.read_csv('../datasets/dataset5000.csv')
     # featureNames = ['formation', 'flying_speed', 'countermeasure', 'weather', 'day_time', 'threat_range', '#threats'] #uav
     featureNames = ['cruise speed','image resolution','illuminance','controls responsiveness','power',
      'smoke intensity','obstacle size','obstacle distance','firm obstacle'] #robot
@@ -94,7 +95,7 @@ if __name__ == '__main__':
     X = ds.loc[:, featureNames]
     y = ds.loc[:, reqs]
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.4, random_state=42
+        X, y, test_size=0.2, random_state=42
     )
 
     models = []
@@ -109,6 +110,11 @@ if __name__ == '__main__':
     controllableFeatureDomains = np.array([[0.0, 100.0], [0.0, 100.0], [0.0, 100.0]])
     discreteIndices = [0, 2]
     # initialize planners
+
+    ds_train = pd.DataFrame(np.hstack((X_train, y_train)), columns=featureNames + reqs)
+    trainPath = "../datasets/X_train.csv"
+    ds_train.to_csv(trainPath, index=False)
+    anchorsPlanner = AnchorsPlanner(trainPath, models, reqs, 0.95, len(featureNames),featureNames,controllableFeatureIndices, controllableFeatureDomains)
 
     customPlanner = CustomPlanner(X_train, n_neighbors, n_startingSolutions, models, targetConfidence,
                                   controllableFeaturesNames, controllableFeatureIndices, controllableFeatureDomains,
@@ -162,6 +168,7 @@ if __name__ == '__main__':
 
     # adaptations
     results = []
+    resultsAnchors = []
     resultsSHAP = []
     resultsFI = []
     resultsFitest = []
@@ -190,7 +197,28 @@ if __name__ == '__main__':
         for i, req in enumerate(reqs):
             lime.saveExplanation(lime.explain(limeExplainer, models[i], row),
                                  path + "/" + str(k) + "_" + req + "_starting")
+        # Anchors adaptation test
+        startTime = time.time()
+        customAdaptation, customConfidence, outputs = anchorsPlanner.evaluate_sample(row)
+        endTime = time.time()
+        customTime = endTime - startTime
 
+        if customAdaptation is not None:
+            for i, req in enumerate(reqs):
+                lime.saveExplanation(lime.explain(limeExplainer, models[i], customAdaptation),
+                                     path + "/" + str(k) + "_" + req + "_final")
+
+            print("Best adaptation Anchors:                 " + str(customAdaptation[0:n_controllableFeatures]))
+            print("Model confidence:                " + str(customConfidence))
+            #print("Adaptation score:                " + str(customScore) + " /" + str(1))
+        else:
+            print("No adaptation found")
+            customScore = None
+
+        print("Anchors algorithm execution time: " + str(customTime) + " s")
+        print("-" * 100)
+
+        # customPlanner adaptation test
         startTime = time.time()
         customAdaptation, customConfidence, customScore = customPlanner.findAdaptation(row)
         endTime = time.time()
@@ -210,6 +238,8 @@ if __name__ == '__main__':
 
         print("Custom algorithm execution time: " + str(customTime) + " s")
         print("-" * 100)
+
+        # SHAP adaptation test
 
         startTime = time.time()
         SHAPcustomAdaptation, SHAPcustomConfidence, SHAPcustomScore = SHAPcustomPlanner.findAdaptation(row)
@@ -231,6 +261,7 @@ if __name__ == '__main__':
         print("Custom SHAP algorithm execution time: " + str(SHAPcustomTime) + " s")
         print("-" * 100)
 
+        # Feature Importance custom adaptation test
         startTime = time.time()
         FIcustomAdaptation, FIcustomConfidence, FIcustomScore = FICustomPlanner.findAdaptation(row)
         endTime = time.time()
@@ -251,6 +282,7 @@ if __name__ == '__main__':
         print("Custom FI algorithm execution time: " + str(FIcustomTime) + " s")
         print("-" * 100)
 
+        # Fitest adaptation test
         startTime = time.time()
         FitestcustomAdaptation, FitestcustomConfidence, FitestcustomScore = FitestPlanner.run_search(row)
         endTime = time.time()
@@ -270,6 +302,8 @@ if __name__ == '__main__':
 
         print("Fitest algorithm execution time: " + str(FitestcustomTime) + " s")
         print("-" * 100)
+
+        # Random adaptation test
 
         startTime = time.time()
         RandomCustomAdaptation, RandomCustomConfidence, RandomCustomScore = RandomPlanner.findAdaptation(row)
@@ -293,6 +327,7 @@ if __name__ == '__main__':
 
         externalFeatures = row[n_controllableFeatures:]
 
+        # NSGA3 adaptation test
         startTime = time.time()
         nsga3Adaptation, nsga3Confidence, nsga3Score = nsga3Planner.findAdaptation(externalFeatures)
         endTime = time.time()
@@ -305,6 +340,11 @@ if __name__ == '__main__':
 
         print("-" * 100)
 
+        resultsAnchors.append([customAdaptation,
+                               customConfidence,
+                               customScore,
+                               customTime])
+        
         results.append([customAdaptation,
                         customConfidence,
                         customScore,
@@ -335,6 +375,11 @@ if __name__ == '__main__':
                               RandomCustomScore,
                               RandomcustomTime])
 
+    resultsAnchors = pd.DataFrame(resultsAnchors, columns=["custom_adaptation",
+                                                           "custom_confidence",
+                                                           "custom_score",
+                                                           "custom_time"])
+    
     results = pd.DataFrame(results, columns=["custom_adaptation",
                                              "custom_confidence",
                                              "custom_score",
@@ -369,6 +414,7 @@ if __name__ == '__main__':
     if not os.path.exists(path):
         os.makedirs(path)
 
+    resultsAnchors.to_csv(path + "/resultsAnchors.csv")
     results.to_csv(path + "/results.csv")
     resultsSHAP.to_csv(path + "/resultsSHAP.csv")
     resultsFI.to_csv(path + "/resultsFI.csv")
@@ -377,7 +423,7 @@ if __name__ == '__main__':
     resultsNSGA.to_csv(path + "/resultsNSGA.csv")
 
     if evaluate:
-        evaluateAdaptations(results, resultsSHAP, resultsFI, resultsFitest, resultsRandom, resultsNSGA, featureNames)
+        evaluateAdaptations(resultsAnchors, results, resultsSHAP, resultsFI, resultsFitest, resultsRandom, resultsNSGA, featureNames)
 
     programEndTime = time.time()
     totalExecutionTime = programEndTime - programStartTime

@@ -50,8 +50,9 @@ def evaluateDataset(dataset, name):
     os.rename(source_file, new_file)
 
 
-def evaluateAdaptations(dataset_custom, dataset_SHAP, dataset_FI, dataset_fitest, dataset_random, dataset_nsga,  featureNames):
+def evaluateAdaptations(dataset_anchors, dataset_custom, dataset_SHAP, dataset_FI, dataset_fitest, dataset_random, dataset_nsga,  featureNames):
 
+    AnchorsAdaptations = pd.DataFrame(dataset_anchors['custom_adaptation'].to_list(), columns=featureNames)
     customAdaptations = pd.DataFrame(dataset_custom['custom_adaptation'].to_list(), columns=featureNames)
     SHAPAdaptations = pd.DataFrame(dataset_SHAP['custom_adaptation'].to_list(), columns=featureNames)
     FIAdaptations = pd.DataFrame(dataset_FI['custom_adaptation'].to_list(), columns=featureNames)
@@ -59,7 +60,7 @@ def evaluateAdaptations(dataset_custom, dataset_SHAP, dataset_FI, dataset_fitest
     RandomAdaptations = pd.DataFrame(dataset_random['custom_adaptation'].to_list(), columns=featureNames)
     NSGAadaptations = pd.DataFrame(dataset_nsga['custom_adaptation'].to_list(), columns=featureNames)
 
-
+    evaluateDataset(AnchorsAdaptations, "anchorsDataset")
     evaluateDataset(customAdaptations, "customDataset")
     evaluateDataset(SHAPAdaptations, "SHAPDataset")
     evaluateDataset(FIAdaptations, "FIDataset")

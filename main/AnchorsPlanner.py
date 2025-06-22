@@ -10,12 +10,15 @@ from anchor import anchor_tabular
 import pandas as pd
 from multiprocessing import Pool, cpu_count
 
+from util import vecPredictProba
+
+
 
 class AnchorsPlanner:
     """
     Class to perform anchor predictions and data wrangling in order to apply anchors to the data. 
     """
-    def __init__(self, anchors, training_dataset, reqClassifiers, reqNames, 
+    def __init__(self, training_dataset, reqClassifiers, reqNames, 
                  anchorsConfidence, feature_number, feature_names,
                  controllableFeatureIndices, controllableFeatureDomains ):
         """
@@ -23,7 +26,6 @@ class AnchorsPlanner:
         Parameters
         ----------
         """
-        self.anchors = anchors
         self.reqClassifiers = reqClassifiers
         self.reqNames = reqNames
         self.feature_number = feature_number
@@ -32,8 +34,11 @@ class AnchorsPlanner:
         self.controllableFeatureIndices = np.array(controllableFeatureIndices)
         self.controllableFeaturesNames = [feature_names[i] for i in controllableFeatureIndices]
 
-        self.observableFeatureIndices = np.delete(feature_number, controllableFeatureIndices)
+        self.observableFeatureIndices = [i for i in range(feature_number) if i not in controllableFeatureIndices]
+        self.observableFeaturesNames = [feature_names[i] for i in self.observableFeatureIndices]
         self.controllableFeatureDomains = controllableFeatureDomains
+
+        print("Requirements classifiers: ", reqClassifiers)
 
         training_df = pd.read_csv(training_dataset)
         all_true_training = training_df[
@@ -97,30 +102,29 @@ class AnchorsPlanner:
         m_r_p = real_values.shape[0] - np.intersect1d(real_values, positively_classified).shape[0]
         print(f"Number of missclassified real positives: {m_r_p}")
 
-        # Funzione che elabora un singolo indice j (positively classified)
-        def process_positive_sample(j):
-            p_sample = positively_classified[j]
+
+        explanations = []
+
+        for j, p_sample in enumerate(positively_classified):
             intersected_exp = {}
-
             for i in range(req_number):
-                expl, model, dataset = explainer[i], reqClassifiers[i], datasets[i]
-                sample = dataset.train[p_sample]
-                exp = expl.explain_instance(sample, model.predict, threshold=0.95)
+                #get the sample
+                sample = datasets[i].train[p_sample]
+                #explain the sample
+                exp = explainer[i].explain_instance(sample, self.reqClassifiers[i].predict, threshold=0.95)
+                #get the textual explanation
                 exp = exp.names()
+                #transform the textual explanations in an interval
                 for boundings in exp:
-                    quoted, rest = self.get_anchor(boundings)
-                    parsed = self.parse_range(rest)
-                    if quoted not in intersected_exp:
-                        intersected_exp[quoted] = parsed
+                    quoted, rest = self.__get_anchor(boundings)            
+                    if(quoted not in intersected_exp):
+                        intersected_exp[quoted] = self.__parse_range(rest)
                     else:
-                        intersected_exp[quoted] = self.intersect(intersected_exp[quoted], parsed)
+                        intersected_exp[quoted] = self.__intersect(intersected_exp[quoted], self.__parse_range(rest))
 
-            return intersected_exp
-
-        # Esegui in parallelo
-        with Pool(processes=cpu_count()) as pool:
-            explanations = pool.map(process_positive_sample, range(len(positively_classified)))
-
+            #prepare the data structure
+            explanations.append(intersected_exp)
+        
         missing = 0
         explanations_reordered = []
         for exp in explanations:
@@ -139,7 +143,24 @@ class AnchorsPlanner:
             explanations_reordered.append(exp_reordered)
             self.explanations = explanations_reordered
 
+    def process_positive_sample(self,j, positively_classified, datasets, models, req_number):
+        p_sample = positively_classified[j]
+        intersected_exp = {}
 
+        for i in range(req_number):
+            sample = datasets[i].train[p_sample]
+            exp = self.explainers[i].explain_instance(sample, models[i].predict, threshold=0.95)
+            exp_names = exp.names()
+            for boundings in exp_names:
+                quoted, rest = self.__get_anchor(boundings)
+                parsed = self.__parse_range(rest)
+                if quoted not in intersected_exp:
+                    intersected_exp[quoted] = parsed
+                else:
+                    intersected_exp[quoted] = self.__intersect(intersected_exp[quoted], parsed)
+
+        return intersected_exp
+    
     def __get_anchor(self, a)-> tuple:
         """
         Function to separate the name of the feature from the ranges.
@@ -562,7 +583,7 @@ class AnchorsPlanner:
 
         return explanations
     
-    def augment_coverage(self, datasets, explanation, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 40, STEP = 20, threshold = 0.5):
+    def augment_coverage(self, datasets, explanations, feature_names, min_vals, max_vals, models, positive_samples, req_names, explainers, req_number, min_idx_cf= 0, max_idx_cf = 3, delta = 40, STEP = 20, threshold = 0.5):
         """
             Incrementally augments the coverage of given explanations by generating new anchors 
             from grid points sampled within feature ranges until a specified coverage threshold is reached.
@@ -616,20 +637,20 @@ class AnchorsPlanner:
             - Increase STEP to explore new regions in subsequent iterations.
             3. Stop when coverage meets or exceeds the threshold, or when no new grid points are found.
             """
-        coverage = self.coverage(explanation, feature_names) #This gives us the initial coverage from the current explanations
+        coverage = self.coverage(explanations, feature_names) #This gives us the initial coverage from the current explanations
         #Iterate until the coverage is greater than the threshold
         while(coverage < threshold):
-            grid_points = self.__grid_points_in_RN(explanation, feature_names, delta, STEP, min_vals, max_vals)
+            grid_points = self.__grid_points_in_RN(explanations, feature_names, delta, STEP, min_vals, max_vals)
             print("grid_points:", grid_points.shape)
             if grid_points.shape[0] == 0:
                 print("No grid points found, stopping augmentation.")
                 break
             model_positives = self.__evaluate_grid_points(grid_points, models, positive_samples, req_names, min_idx_cf, max_idx_cf)
             print("model_positives:", model_positives.shape)
-            explanation = self.__create_new_anchors(datasets, explainers, model_positives, models, req_number, explanation)
-            coverage = self.coverage(explanation, feature_names)
+            explanations = self.__create_new_anchors(datasets, explainers, model_positives, models, req_number, explanations)
+            coverage = self.coverage(explanations, feature_names)
             STEP += STEP
-        return explanation
+        return explanations
     
     def min_dist_polytope(self, x, explanations_table, controllable_features, observable_features): #feature names must be only controllable features if observable features are "satisfied" otherwise
         """
@@ -786,7 +807,7 @@ class AnchorsPlanner:
         return contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable
 
 
-    def evaluate_sample(self, sample, explanation, controllable_features, observable_features, req_names, models):
+    def evaluate_sample(self, sample):
         """
         Evaluates a given sample against a set of polytopes (explanations) and classification models,
         considering both controllable and observable features.
@@ -833,7 +854,7 @@ class AnchorsPlanner:
         to move inside the controllable polytope using `go_inside_CF_given_polytope`.
         """
         print("Sample: ", sample)
-        contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, explanation, controllable_features, observable_features)
+        contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, self.explanations, self.controllableFeaturesNames, self.observableFeaturesNames)
         print("min_dist_controllable: ", min_dist_controllable)
         print("min_dist_index_controllable: ", min_dist_index_controllable)
         print("min_dist_observable: ", min_dist_observable)
@@ -844,36 +865,36 @@ class AnchorsPlanner:
             if contr_f_dist[min_dist_index_observable] == 0:
                 print("The sample is in the polytope for the controllable features too!")
                 #Evaluate the sample with the model
-                outputs = np.zeros(len(req_names))
-                for r, req in enumerate(req_names):
+                outputs = np.zeros(len(self.reqNames))
+                for r, req in enumerate(self.reqNames):
                     print(f"___________Requirement {req}___________")
                     
                     #classify the samplsses with the model
-                    tmp_output = models[r].predict(sample.reshape(1, -1))
+                    tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
                     print("tmp_output: ", tmp_output)
                     outputs[r] = tmp_output
                     #print("outputs: ", outputs)
                     if(r == 0):
-                        output = tmp_output
+                        output = int(tmp_output)
                     else:
-                        output *= tmp_output
+                        output *= int(tmp_output)
                 print("output: ", output)
-                return contr_f_dist[min_dist_index_observable], obs_f_dist[min_dist_index_observable], sample, outputs
-
+                confidece =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+                return sample, confidece, outputs   
             else:
                 print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
-                polytope = explanation[min_dist_index_observable]
+                polytope = self.explanations[min_dist_index_observable]
                 print("Polytope: ", polytope)
 
-                sample = self.go_inside_CF_given_polytope(sample, polytope, controllable_features, observable_features)
+                sample = self.go_inside_CF_given_polytope(sample, polytope, self.controllableFeaturesNames, self.observableFeaturesNames)
                 print("Sample after going inside: ", sample)
                 #check is its now inside the polytope
-                for i, f_name in enumerate(controllable_features):
+                for i, f_name in enumerate(self.controllableFeaturesNames):
                     inside = self.__inside(sample[i], polytope[f_name])
                     if not inside:
                         print("sample not inside for feature: ", f_name)
                         inside = False
-                for i, f_name in enumerate(observable_features):
+                for i, f_name in enumerate(self.observableFeaturesNames):
                     inside = self.__inside(sample[i+3], polytope[f_name])
                     if not inside:
                         print("sample not inside for feature: ", f_name)
@@ -882,12 +903,12 @@ class AnchorsPlanner:
                     print("The sample is now inside the polytope for the controllable features too!")
                 
                 #Evaluate the sample with the model
-                outputs = np.zeros(len(req_names))
-                for r, req in enumerate(req_names):
+                outputs = np.zeros(len(self.reqNames))
+                for r, req in enumerate(self.reqNames):
                     print(f"___________Requirement {req}___________")
                     
                     #classify the samples with the model
-                    tmp_output = models[r].predict(sample.reshape(1, -1))
+                    tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
                     print("tmp_output: ", tmp_output)
                     outputs[r] = tmp_output
                     if(r == 0):
@@ -895,26 +916,26 @@ class AnchorsPlanner:
                     else:
                         output *= tmp_output
                 print("output: ", output)
-                contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, explanation, controllable_features, observable_features)
-                return contr_f_dist[min_dist_index_observable], obs_f_dist[min_dist_index_observable], sample, outputs
-
+                contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, self.explanations, self.controllableFeaturesNames, self.observableFeaturesNames)
+                confidece =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+                return sample, confidece, outputs   
         else:
             print("The sample is not in the polytope for the observable features!")
             print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
             #Now we want to change the CF to get as close as possible to that polytope
-            polytope = explanation[min_dist_index_observable]
+            polytope = self.explanations[min_dist_index_observable]
             print("Polytope: ", polytope)
 
-            sample = self.go_inside_CF_given_polytope(sample, polytope, controllable_features, observable_features)
+            sample = self.go_inside_CF_given_polytope(sample, polytope, self.controllableFeaturesNames, self.observableFeaturesNames)
             print("Sample after going closer: ", sample)
 
             #check is its now inside the polytope for the CF
-            for i, f_name in enumerate(controllable_features):
+            for i, f_name in enumerate(self.controllableFeaturesNames):
                 inside = self.__inside(sample[i], polytope[f_name])
                 if not inside:
                     print("sample not inside for feature: ", f_name)
                     inside = False
-            for i, f_name in enumerate(observable_features):
+            for i, f_name in enumerate(self.observableFeaturesNames):
                 inside = self.__inside(sample[i+3], polytope[f_name])
                 if not inside:
                     print("sample not inside for feature: ", f_name)
@@ -923,19 +944,20 @@ class AnchorsPlanner:
                 print("The sample is now inside the polytope for the controllable features!")
             #Evaluate the sample with the model
             
-            outputs = np.zeros(len(req_names))
-            for r, req in enumerate(req_names):
+            outputs = np.zeros(len(self.reqNames))
+            for r, req in enumerate(self.reqNames):
                 print(f"___________Requirement {req}___________")
                 
                 #classify the samplsses with the model
-                tmp_output = models[r].predict(sample.reshape(1, -1))
+                tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
                 print("tmp_output: ", tmp_output)
                 outputs[r] = tmp_output
                 if(r == 0):
                     output = tmp_output
                 else:
                     output *= tmp_output
-            return contr_f_dist[min_dist_index_observable], obs_f_dist[min_dist_index_observable], sample, outputs
+            confidece =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+            return sample, confidece, outputs           
             
 
     def go_inside_CF_given_polytope(self, sample, polytope, controllable_features, observable_features):
