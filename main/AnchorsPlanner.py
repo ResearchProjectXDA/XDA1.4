@@ -79,7 +79,6 @@ class AnchorsPlanner:
         for i, req in enumerate(reqNames):
             print(f"___________Requirement {i+1}: {req}___________")
             output = reqClassifiers[i].predict(datasets[i].train)
-
             #obtain the indices of the samples that have the requirement satisfied (truly in the dataset)
             real_values_single_req = np.where(datasets[i].labels_train == 1)[0]
 
@@ -866,6 +865,7 @@ class AnchorsPlanner:
                 print("The sample is in the polytope for the controllable features too!")
                 #Evaluate the sample with the model
                 outputs = np.zeros(len(self.reqNames))
+                output = True
                 for r, req in enumerate(self.reqNames):
                     print(f"___________Requirement {req}___________")
                     
@@ -874,13 +874,10 @@ class AnchorsPlanner:
                     print("tmp_output: ", tmp_output)
                     outputs[r] = tmp_output
                     #print("outputs: ", outputs)
-                    if(r == 0):
-                        output = int(tmp_output)
-                    else:
-                        output *= int(tmp_output)
+                    output = output and bool(tmp_output)
                 print("output: ", output)
-                confidece =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
-                return sample, confidece, outputs   
+                confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+                return sample, confidence, outputs   
             else:
                 print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
                 polytope = self.explanations[min_dist_index_observable]
@@ -945,6 +942,7 @@ class AnchorsPlanner:
             #Evaluate the sample with the model
             
             outputs = np.zeros(len(self.reqNames))
+            output = True
             for r, req in enumerate(self.reqNames):
                 print(f"___________Requirement {req}___________")
                 
@@ -952,12 +950,9 @@ class AnchorsPlanner:
                 tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
                 print("tmp_output: ", tmp_output)
                 outputs[r] = tmp_output
-                if(r == 0):
-                    output = tmp_output
-                else:
-                    output *= tmp_output
-            confidece =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
-            return sample, confidece, outputs           
+                output = output and bool(tmp_output)
+            confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+            return sample, confidence, outputs           
             
 
     def go_inside_CF_given_polytope(self, sample, polytope, controllable_features, observable_features):
