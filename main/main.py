@@ -123,30 +123,31 @@ if __name__ == '__main__':
     nsga3Planner = NSGA3Planner(models, targetConfidence, controllableFeatureIndices, controllableFeatureDomains,
                                 optimizationDirections, successScore, optimizationScore)
 
-    SHAPcustomPlanner = SHAPCustomPlanner(X_train, n_neighbors, n_startingSolutions, models, targetConfidence,
-                                          controllableFeaturesNames, controllableFeatureIndices,
-                                          controllableFeatureDomains,
-                                          optimizationDirections, optimizationScore, 1, "../explainability_plots")
+    # SHAPcustomPlanner = SHAPCustomPlanner(X_train, n_neighbors, n_startingSolutions, models, targetConfidence,
+    #                                       controllableFeaturesNames, controllableFeatureIndices,
+    #                                       controllableFeatureDomains,
+    #                                       optimizationDirections, optimizationScore, 1, "../explainability_plots")
 
-    FICustomPlanner = FICustomPlanner(X_train, y_train, n_neighbors, n_startingSolutions, models, targetConfidence,
-                                      controllableFeaturesNames, controllableFeatureIndices, controllableFeatureDomains,
-                                      optimizationDirections, optimizationScore, 1, "../explainability_plots")
+    # FICustomPlanner = FICustomPlanner(X_train, y_train, n_neighbors, n_startingSolutions, models, targetConfidence,
+    #                                   controllableFeaturesNames, controllableFeatureIndices, controllableFeatureDomains,
+    #                                   optimizationDirections, optimizationScore, 1, "../explainability_plots")
 
-    pop_size = nsga3Planner.algorithm.pop_size
+    # pop_size = nsga3Planner.algorithm.pop_size
 
-    FitestPlanner = FitestPlanner(models, targetConfidence,
-                                  controllableFeatureIndices, controllableFeatureDomains, optimizationScore,
-                                  successScore,
-                                  pop_size,
-                                  discreteIndices, 4, [0.8, 0.8, 0.8,0.8])
+    # FitestPlanner = FitestPlanner(models, targetConfidence,
+    #                               controllableFeatureIndices, controllableFeatureDomains, optimizationScore,
+    #                               successScore,
+    #                               pop_size,
+    #                               discreteIndices, 4, [0.8, 0.8, 0.8,0.8])
 
-    RandomPlanner = RandomPlanner(controllableFeatureIndices, controllableFeatureDomains, discreteIndices, models,
-                                  optimizationScore)
+    # RandomPlanner = RandomPlanner(controllableFeatureIndices, controllableFeatureDomains, discreteIndices, models,
+    #                               optimizationScore)
 
     # create lime explainer
     limeExplainer = lime.createLimeExplainer(X_train)
 
     # metrics
+    # NOT  USED
     meanCustomScore = 0
     meanCustomScoreSHAP = 0
     meanCustomScoreFI = 0
@@ -241,89 +242,89 @@ if __name__ == '__main__':
 
         # SHAP adaptation test
 
-        startTime = time.time()
-        SHAPcustomAdaptation, SHAPcustomConfidence, SHAPcustomScore = SHAPcustomPlanner.findAdaptation(row)
-        endTime = time.time()
-        SHAPcustomTime = endTime - startTime
+        # startTime = time.time()
+        # SHAPcustomAdaptation, SHAPcustomConfidence, SHAPcustomScore = SHAPcustomPlanner.findAdaptation(row)
+        # endTime = time.time()
+        # SHAPcustomTime = endTime - startTime
 
-        if SHAPcustomAdaptation is not None:
-            for i, req in enumerate(reqs):
-                lime.saveExplanation(lime.explain(limeExplainer, models[i], SHAPcustomAdaptation),
-                                     path + "/" + str(k) + "_" + req + "_final")
+        # if SHAPcustomAdaptation is not None:
+        #     for i, req in enumerate(reqs):
+        #         lime.saveExplanation(lime.explain(limeExplainer, models[i], SHAPcustomAdaptation),
+        #                              path + "/" + str(k) + "_" + req + "_final")
 
-            print("Best adaptation SHAP:                 " + str(SHAPcustomAdaptation[0:n_controllableFeatures]))
-            print("Model confidence SHAP:                " + str(SHAPcustomConfidence))
-            print("Adaptation score SHAP:                " + str(SHAPcustomScore) + " /" + str(1))
-        else:
-            print("No adaptation found")
-            SHAPcustomScore = None
+        #     print("Best adaptation SHAP:                 " + str(SHAPcustomAdaptation[0:n_controllableFeatures]))
+        #     print("Model confidence SHAP:                " + str(SHAPcustomConfidence))
+        #     print("Adaptation score SHAP:                " + str(SHAPcustomScore) + " /" + str(1))
+        # else:
+        #     print("No adaptation found")
+        #     SHAPcustomScore = None
 
-        print("Custom SHAP algorithm execution time: " + str(SHAPcustomTime) + " s")
-        print("-" * 100)
+        # print("Custom SHAP algorithm execution time: " + str(SHAPcustomTime) + " s")
+        # print("-" * 100)
 
         # Feature Importance custom adaptation test
-        startTime = time.time()
-        FIcustomAdaptation, FIcustomConfidence, FIcustomScore = FICustomPlanner.findAdaptation(row)
-        endTime = time.time()
-        FIcustomTime = endTime - startTime
+        # startTime = time.time()
+        # FIcustomAdaptation, FIcustomConfidence, FIcustomScore = FICustomPlanner.findAdaptation(row)
+        # endTime = time.time()
+        # FIcustomTime = endTime - startTime
 
-        if FIcustomAdaptation is not None:
-            for i, req in enumerate(reqs):
-                lime.saveExplanation(lime.explain(limeExplainer, models[i], FIcustomAdaptation),
-                                     path + "/" + str(k) + "_" + req + "_final")
+        # if FIcustomAdaptation is not None:
+        #     for i, req in enumerate(reqs):
+        #         lime.saveExplanation(lime.explain(limeExplainer, models[i], FIcustomAdaptation),
+        #                              path + "/" + str(k) + "_" + req + "_final")
 
-            print("Best adaptation FI:                 " + str(FIcustomAdaptation[0:n_controllableFeatures]))
-            print("Model confidence FI:                " + str(FIcustomConfidence))
-            print("Adaptation score FI:                " + str(FIcustomScore) + " /" + str(1))
-        else:
-            print("No adaptation found")
-            FIcustomScore = None
+        #     print("Best adaptation FI:                 " + str(FIcustomAdaptation[0:n_controllableFeatures]))
+        #     print("Model confidence FI:                " + str(FIcustomConfidence))
+        #     print("Adaptation score FI:                " + str(FIcustomScore) + " /" + str(1))
+        # else:
+        #     print("No adaptation found")
+        #     FIcustomScore = None
 
-        print("Custom FI algorithm execution time: " + str(FIcustomTime) + " s")
-        print("-" * 100)
+        # print("Custom FI algorithm execution time: " + str(FIcustomTime) + " s")
+        # print("-" * 100)
 
         # Fitest adaptation test
-        startTime = time.time()
-        FitestcustomAdaptation, FitestcustomConfidence, FitestcustomScore = FitestPlanner.run_search(row)
-        endTime = time.time()
-        FitestcustomTime = endTime - startTime
+        # startTime = time.time()
+        # FitestcustomAdaptation, FitestcustomConfidence, FitestcustomScore = FitestPlanner.run_search(row)
+        # endTime = time.time()
+        # FitestcustomTime = endTime - startTime
 
-        if FitestcustomAdaptation is not None:
-            for i, req in enumerate(reqs):
-                lime.saveExplanation(lime.explain(limeExplainer, models[i], FitestcustomAdaptation),
-                                     path + "/" + str(k) + "_" + req + "_final")
+        # if FitestcustomAdaptation is not None:
+        #     for i, req in enumerate(reqs):
+        #         lime.saveExplanation(lime.explain(limeExplainer, models[i], FitestcustomAdaptation),
+        #                              path + "/" + str(k) + "_" + req + "_final")
 
-            print("Best adaptation Fitest:                 " + str(FitestcustomAdaptation[0:n_controllableFeatures]))
-            print("Model confidence Fitest:                " + str(FitestcustomConfidence))
-            print("Adaptation score Fitest:                " + str(FitestcustomScore) + " /" + str(1))
-        else:
-            print("No adaptation found")
-            FitestcustomScore = None
+        #     print("Best adaptation Fitest:                 " + str(FitestcustomAdaptation[0:n_controllableFeatures]))
+        #     print("Model confidence Fitest:                " + str(FitestcustomConfidence))
+        #     print("Adaptation score Fitest:                " + str(FitestcustomScore) + " /" + str(1))
+        # else:
+        #     print("No adaptation found")
+        #     FitestcustomScore = None
 
-        print("Fitest algorithm execution time: " + str(FitestcustomTime) + " s")
-        print("-" * 100)
+        # print("Fitest algorithm execution time: " + str(FitestcustomTime) + " s")
+        # print("-" * 100)
 
         # Random adaptation test
 
-        startTime = time.time()
-        RandomCustomAdaptation, RandomCustomConfidence, RandomCustomScore = RandomPlanner.findAdaptation(row)
-        endTime = time.time()
-        RandomcustomTime = endTime - startTime
+        # startTime = time.time()
+        # RandomCustomAdaptation, RandomCustomConfidence, RandomCustomScore = RandomPlanner.findAdaptation(row)
+        # endTime = time.time()
+        # RandomcustomTime = endTime - startTime
 
-        if RandomCustomAdaptation is not None:
-            for i, req in enumerate(reqs):
-                lime.saveExplanation(lime.explain(limeExplainer, models[i], RandomCustomAdaptation),
-                                     path + "/" + str(k) + "_" + req + "_final")
+        # if RandomCustomAdaptation is not None:
+        #     for i, req in enumerate(reqs):
+        #         lime.saveExplanation(lime.explain(limeExplainer, models[i], RandomCustomAdaptation),
+        #                              path + "/" + str(k) + "_" + req + "_final")
 
-            print("Best adaptation Random:                 " + str(RandomCustomAdaptation[0:n_controllableFeatures]))
-            print("Model confidence Random:                " + str(RandomCustomConfidence))
-            print("Adaptation score Random:                " + str(RandomCustomScore) + " /" + str(1))
-        else:
-            print("No adaptation found")
-            RandomCustomScore = None
+        #     print("Best adaptation Random:                 " + str(RandomCustomAdaptation[0:n_controllableFeatures]))
+        #     print("Model confidence Random:                " + str(RandomCustomConfidence))
+        #     print("Adaptation score Random:                " + str(RandomCustomScore) + " /" + str(1))
+        # else:
+        #     print("No adaptation found")
+        #     RandomCustomScore = None
 
-        print("Custom Random algorithm execution time: " + str(RandomcustomTime) + " s")
-        print("-" * 100)
+        # print("Custom Random algorithm execution time: " + str(RandomcustomTime) + " s")
+        # print("-" * 100)
 
         externalFeatures = row[n_controllableFeatures:]
 
@@ -339,7 +340,7 @@ if __name__ == '__main__':
         print("NSGA3 execution time:            " + str(nsga3Time) + " s")
 
         print("-" * 100)
-
+        
         resultsAnchors.append([customAdaptation,
                                customConfidence,
                                customScore,
@@ -353,27 +354,27 @@ if __name__ == '__main__':
         resultsNSGA.append([nsga3Adaptation,
                             nsga3Confidence,
                             nsga3Score,
-                            nsga3Time])
+                         nsga3Time])
 
-        resultsSHAP.append([SHAPcustomAdaptation,
-                            SHAPcustomConfidence,
-                            SHAPcustomScore,
-                            SHAPcustomTime])
+        # resultsSHAP.append([SHAPcustomAdaptation,
+        #                     SHAPcustomConfidence,
+        #                     SHAPcustomScore,
+        #                     SHAPcustomTime])
 
-        resultsFI.append([FIcustomAdaptation,
-                          FIcustomConfidence,
-                          FIcustomScore,
-                          FIcustomTime])
+        # resultsFI.append([FIcustomAdaptation,
+        #                   FIcustomConfidence,
+        #                   FIcustomScore,
+        #                   FIcustomTime])
 
-        resultsFitest.append([FitestcustomAdaptation,
-                              FitestcustomConfidence,
-                              FitestcustomScore,
-                              FitestcustomTime])
+        # resultsFitest.append([FitestcustomAdaptation,
+        #                       FitestcustomConfidence,
+        #                       FitestcustomScore,
+        #                       FitestcustomTime])
 
-        resultsRandom.append([RandomCustomAdaptation,
-                              RandomCustomConfidence,
-                              RandomCustomScore,
-                              RandomcustomTime])
+        # resultsRandom.append([RandomCustomAdaptation,
+        #                       RandomCustomConfidence,
+        #                       RandomCustomScore,
+        #                       RandomcustomTime])
 
     resultsAnchors = pd.DataFrame(resultsAnchors, columns=["custom_adaptation",
                                                            "custom_confidence",
@@ -390,25 +391,25 @@ if __name__ == '__main__':
                                                      "custom_score",
                                                      "custom_time"])
 
-    resultsSHAP = pd.DataFrame(resultsSHAP, columns=["custom_adaptation",
-                                                     "custom_confidence",
-                                                     "custom_score",
-                                                     "custom_time"])
+    # resultsSHAP = pd.DataFrame(resultsSHAP, columns=["custom_adaptation",
+    #                                                  "custom_confidence",
+    #                                                  "custom_score",
+    #                                                  "custom_time"])
 
-    resultsFI = pd.DataFrame(resultsFI, columns=["custom_adaptation",
-                                                 "custom_confidence",
-                                                 "custom_score",
-                                                 "custom_time"])
+    # resultsFI = pd.DataFrame(resultsFI, columns=["custom_adaptation",
+    #                                              "custom_confidence",
+    #                                              "custom_score",
+    #                                              "custom_time"])
 
-    resultsFitest = pd.DataFrame(resultsFitest, columns=["custom_adaptation",
-                                                         "custom_confidence",
-                                                         "custom_score",
-                                                         "custom_time"])
+    # resultsFitest = pd.DataFrame(resultsFitest, columns=["custom_adaptation",
+    #                                                      "custom_confidence",
+    #                                                      "custom_score",
+    #                                                      "custom_time"])
 
-    resultsRandom = pd.DataFrame(resultsRandom, columns=["custom_adaptation",
-                                                         "custom_confidence",
-                                                         "custom_score",
-                                                         "custom_time"])
+    # resultsRandom = pd.DataFrame(resultsRandom, columns=["custom_adaptation",
+    #                                                      "custom_confidence",
+    #                                                      "custom_score",
+    #                                                      "custom_time"])
 
     path = "../results"
     if not os.path.exists(path):
@@ -416,15 +417,15 @@ if __name__ == '__main__':
 
     resultsAnchors.to_csv(path + "/resultsAnchors.csv")
     results.to_csv(path + "/results.csv")
-    resultsSHAP.to_csv(path + "/resultsSHAP.csv")
-    resultsFI.to_csv(path + "/resultsFI.csv")
-    resultsFitest.to_csv(path + "/resultsFitest.csv")
-    resultsRandom.to_csv(path + "/resultsRandom.csv")
+    # resultsSHAP.to_csv(path + "/resultsSHAP.csv")
+    # resultsFI.to_csv(path + "/resultsFI.csv")
+    # resultsFitest.to_csv(path + "/resultsFitest.csv")
+    # resultsRandom.to_csv(path + "/resultsRandom.csv")
     resultsNSGA.to_csv(path + "/resultsNSGA.csv")
 
     if evaluate:
-        evaluateAdaptations(resultsAnchors, results, resultsSHAP, resultsFI, resultsFitest, resultsRandom, resultsNSGA, featureNames)
-
+        # evaluateAdaptations(resultsAnchors, results, resultsSHAP, resultsFI, resultsFitest, resultsRandom, resultsNSGA, featureNames)
+        evaluateAdaptations(resultsAnchors, results, resultsNSGA, featureNames)
     programEndTime = time.time()
     totalExecutionTime = programEndTime - programStartTime
     print("\nProgram execution time: " + str(totalExecutionTime / 60) + " m")
