@@ -187,6 +187,9 @@ if __name__ == '__main__':
         os.remove(f)
 
     testNum = 10
+    outputs_anchors = np.zeros((testNum, n_reqs))
+    outputs_PDP = np.zeros((testNum, n_reqs))
+    outputs_NSGA = np.zeros((testNum, n_reqs))
     for k in range(1, testNum + 1):
         rowIndex = k - 1
         row = X_test.iloc[rowIndex, :].to_numpy()
@@ -201,6 +204,7 @@ if __name__ == '__main__':
         # Anchors adaptation test
         startTime = time.time()
         customAdaptation, customConfidence, outputs = anchorsPlanner.evaluate_sample(row)
+        outputs_anchors[rowIndex, :] = customConfidence
         endTime = time.time()
         customTime = endTime - startTime
 
@@ -222,6 +226,7 @@ if __name__ == '__main__':
         # customPlanner adaptation test
         startTime = time.time()
         customAdaptation, customConfidence, customScore = customPlanner.findAdaptation(row)
+        outputs_PDP[rowIndex, :] = customConfidence
         endTime = time.time()
         customTime = endTime - startTime
 
@@ -333,6 +338,7 @@ if __name__ == '__main__':
         nsga3Adaptation, nsga3Confidence, nsga3Score = nsga3Planner.findAdaptation(externalFeatures)
         endTime = time.time()
         nsga3Time = endTime - startTime
+        outputs_NSGA[rowIndex, :] = nsga3Confidence
 
         print("Best NSGA3 adaptation:           " + str(nsga3Adaptation[:n_controllableFeatures]))
         print("Model confidence:                " + str(nsga3Confidence))
@@ -375,6 +381,64 @@ if __name__ == '__main__':
         #                       RandomCustomConfidence,
         #                       RandomCustomScore,
         #                       RandomcustomTime])
+    
+    #Metrics
+    num_misclassified_req0_anchors = np.where(outputs_anchors[:, 0] < 0.5)[0].shape[0]
+    num_misclassified_req1_anchors = np.where(outputs_anchors[:, 1] < 0.5)[0].shape[0]
+    num_misclassified_req2_anchors = np.where(outputs_anchors[:, 2] < 0.5)[0].shape[0]
+    num_misclassified_req3_anchors = np.where(outputs_anchors[:, 3] < 0.5)[0].shape[0]
+
+    num_misclassified_req0_custom = np.where(outputs_PDP[:, 0] < 0.5)[0].shape[0]
+    num_misclassified_req1_custom = np.where(outputs_PDP[:, 1] < 0.5)[0].shape[0]
+    num_misclassified_req2_custom = np.where(outputs_PDP[:, 2] < 0.5)[0].shape[0]
+    num_misclassified_req3_custom = np.where(outputs_PDP[:, 3] < 0.5)[0].shape[0]
+
+    num_misclassified_req0_nsga = np.where(outputs_NSGA[:, 0] < 0.5)[0].shape[0]
+    num_misclassified_req1_nsga = np.where(outputs_NSGA[:, 1] < 0.5)[0].shape[0]
+    num_misclassified_req2_nsga = np.where(outputs_NSGA[:, 2] < 0.5)[0].shape[0]
+    num_misclassified_req3_nsga = np.where(outputs_NSGA[:, 3] < 0.5)[0].shape[0]
+
+    print(Fore.GREEN + "Number of misclassified req0 Anchors: " + str(num_misclassified_req0_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req1 Anchors: " + str(num_misclassified_req1_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req2 Anchors: " + str(num_misclassified_req2_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req3 Anchors: " + str(num_misclassified_req3_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req0 Custom: " + str(num_misclassified_req0_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req1 Custom: " + str(num_misclassified_req1_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req2 Custom: " + str(num_misclassified_req2_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req3 Custom: " + str(num_misclassified_req3_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req0 NSGA3: " + str(num_misclassified_req0_nsga) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req1 NSGA3: " + str(num_misclassified_req1_nsga) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req2 NSGA3: " + str(num_misclassified_req2_nsga) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of misclassified req3 NSGA3: " + str(num_misclassified_req3_nsga) + Style.RESET_ALL)
+
+    #Cross- entrhopy
+    cross_entropy_req0_anchors = -np.sum(np.log(outputs_anchors[:,0]))
+    cross_entropy_req1_anchors = -np.sum(np.log(outputs_anchors[:,1]))
+    cross_entropy_req2_anchors = -np.sum(np.log(outputs_anchors[:,2]))
+    cross_entropy_req3_anchors = -np.sum(np.log(outputs_anchors[:,3]))
+
+    cross_entropy_req0_custom = -np.sum(np.log(outputs_PDP[:,0]))
+    cross_entropy_req1_custom = -np.sum(np.log(outputs_PDP[:,1]))
+    cross_entropy_req2_custom = -np.sum(np.log(outputs_PDP[:,2]))
+    cross_entropy_req3_custom = -np.sum(np.log(outputs_PDP[:,3]))
+
+    cross_entropy_req0_nsga = -np.sum(np.log(outputs_NSGA[:,0]))
+    cross_entropy_req1_nsga = -np.sum(np.log(outputs_NSGA[:,1]))
+    cross_entropy_req2_nsga = -np.sum(np.log(outputs_NSGA[:,2]))
+    cross_entropy_req3_nsga = -np.sum(np.log(outputs_NSGA[:,3]))
+
+    print(Fore.GREEN + "Cross-entropy req0 Anchors: " + str(cross_entropy_req0_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req1 Anchors: " + str(cross_entropy_req1_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req2 Anchors: " + str(cross_entropy_req2_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req3 Anchors: " + str(cross_entropy_req3_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req0 Custom: " + str(cross_entropy_req0_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req1 Custom: " + str(cross_entropy_req1_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req2 Custom: " + str(cross_entropy_req2_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req3 Custom: " + str(cross_entropy_req3_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req0 NSGA3: " + str(cross_entropy_req0_nsga) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req1 NSGA3: " + str(cross_entropy_req1_nsga) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req2 NSGA3: " + str(cross_entropy_req2_nsga) + Style.RESET_ALL)
+    print(Fore.GREEN + "Cross-entropy req3 NSGA3: " + str(cross_entropy_req3_nsga) + Style.RESET_ALL)
 
     resultsAnchors = pd.DataFrame(resultsAnchors, columns=["custom_adaptation",
                                                            "custom_confidence",

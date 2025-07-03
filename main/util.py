@@ -11,7 +11,7 @@ def vecPredictProba(models, X):
 
     probas = np.empty((X.shape[0], len(models)))
     for i, model in enumerate(models):
-        probas[:, i] = model.predict_proba(X)[:, 1]
+        probas[:, i] = model.predict_proba(X)[:, 1] #Returns the probability of the positive class
     return probas
 
 

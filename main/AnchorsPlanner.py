@@ -806,7 +806,7 @@ class AnchorsPlanner:
         return contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable
 
 
-    def evaluate_sample(self, sample):
+    def evaluate_sample(self, sample, threshold = 0.8):
         """
         Evaluates a given sample against a set of polytopes (explanations) and classification models,
         considering both controllable and observable features.
@@ -876,7 +876,13 @@ class AnchorsPlanner:
                     #print("outputs: ", outputs)
                     output = output and bool(tmp_output)
                 print("output: ", output)
+                
                 confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+                min_prob = np.min(confidence)
+                if min_prob < threshold:
+                    sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames, self.observableFeaturesNames)
+                confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+
                 return sample, confidence, outputs   
             else:
                 print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
@@ -901,6 +907,7 @@ class AnchorsPlanner:
                 
                 #Evaluate the sample with the model
                 outputs = np.zeros(len(self.reqNames))
+                output = True
                 for r, req in enumerate(self.reqNames):
                     print(f"___________Requirement {req}___________")
                     
@@ -908,14 +915,15 @@ class AnchorsPlanner:
                     tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
                     print("tmp_output: ", tmp_output)
                     outputs[r] = tmp_output
-                    if(r == 0):
-                        output = tmp_output
-                    else:
-                        output *= tmp_output
+                    output = output and bool(tmp_output)
                 print("output: ", output)
                 contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, self.explanations, self.controllableFeaturesNames, self.observableFeaturesNames)
-                confidece =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
-                return sample, confidece, outputs   
+                confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+                min_prob = np.min(confidence)
+                if min_prob < threshold:
+                    sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames, self.observableFeaturesNames)
+                confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+                return sample, confidence, outputs   
         else:
             print("The sample is not in the polytope for the observable features!")
             print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
@@ -951,6 +959,10 @@ class AnchorsPlanner:
                 print("tmp_output: ", tmp_output)
                 outputs[r] = tmp_output
                 output = output and bool(tmp_output)
+            confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
+            min_prob = np.min(confidence)
+            if min_prob < threshold:
+                sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames, self.observableFeaturesNames)
             confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
             return sample, confidence, outputs           
             
@@ -1004,3 +1016,44 @@ class AnchorsPlanner:
                 sample[i] = int(b)-1
             #sample[i] = (a+b)/2
         return sample
+
+
+    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=1000):
+        delta_controllable_features = []
+        for i, f_name in enumerate(controllable_features):
+            a, b = polytope[f_name][0], polytope[f_name][1]
+            if a == -inf:
+                a = 0
+            if b == inf:
+                b = 100
+            if (b-sample[i]) < (sample[i]-a):
+                delta = - (b-a) * 0.1 #We need to move backwards
+            else:
+                delta = (b-a) * 0.1 #We need to move forward
+            delta_controllable_features.append(delta)
+        print("delta_controllable_features: ", delta_controllable_features)
+
+        n_iter = 0
+        max_prob = 0
+        current_max_prob = 0
+        while n_iter < max_iter or max_prob <= threshold:
+            for i, f_name in enumerate(controllable_features):
+                print("a")
+                adapted_sample = sample.copy()
+                adapted_sample[i] += delta_controllable_features[i]
+                if adapted_sample[i] >= polytope[f_name][1] or adapted_sample[i] <= polytope[f_name][0]: #If we are outside the bounds of the polytope, we need to stop
+                    print("a dentro")
+                    break
+                probs = vecPredictProba(self.reqClassifiers, adapted_sample.reshape(1, -1))
+                current_max_prob = np.min(probs) #This is the minimum probability across all models for the adapted sample
+                if current_max_prob > max_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
+                    print("a")
+                    max_prob = current_max_prob
+                    best_sample = adapted_sample.copy()
+                    print("New best sample found: ", best_sample, " with highest minimum probability: ", max_prob)
+
+                n_iter += 1
+            print("Best sample found: ", best_sample, " with highest minimum probability: ", max_prob)
+            sample = best_sample
+        
+        return best_sample
