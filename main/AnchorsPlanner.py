@@ -717,7 +717,7 @@ class AnchorsPlanner:
         contr_f_dist = np.zeros(len(explanations_table))
         obs_f_dist = np.zeros(len(explanations_table))
 
-        print("explanations_table lenght: ", len(explanations_table))
+        #print("explanations_table lenght: ", len(explanations_table))
         for i in range(len(explanations_table)):
             #print("i: ", i)
             for j, f_name in enumerate(controllable_features):
@@ -852,117 +852,117 @@ class AnchorsPlanner:
         - If the sample is outside the controllable polytope but inside the observable polytope, the sample is adjusted
         to move inside the controllable polytope using `go_inside_CF_given_polytope`.
         """
-        print("Sample: ", sample)
+        #print("Sample: ", sample)
         contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, self.explanations, self.controllableFeaturesNames, self.observableFeaturesNames)
-        print("min_dist_controllable: ", min_dist_controllable)
-        print("min_dist_index_controllable: ", min_dist_index_controllable)
-        print("min_dist_observable: ", min_dist_observable)
-        print("min_dist_index_observable: ", min_dist_index_observable)
+        # print("min_dist_controllable: ", min_dist_controllable)
+        # print("min_dist_index_controllable: ", min_dist_index_controllable)
+        # print("min_dist_observable: ", min_dist_observable)
+        # print("min_dist_index_observable: ", min_dist_index_observable)
 
         if obs_f_dist[min_dist_index_observable] == 0:
-            print("The sample is in the polytope for the observable features!")
+            #print("The sample is in the polytope for the observable features!")
             if contr_f_dist[min_dist_index_observable] == 0:
-                print("The sample is in the polytope for the controllable features too!")
+                #print("The sample is in the polytope for the controllable features too!")
                 #Evaluate the sample with the model
                 outputs = np.zeros(len(self.reqNames))
                 output = True
                 for r, req in enumerate(self.reqNames):
-                    print(f"___________Requirement {req}___________")
+                    #print(f"___________Requirement {req}___________")
                     
                     #classify the samplsses with the model
                     tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
-                    print("tmp_output: ", tmp_output)
+                    #print("tmp_output: ", tmp_output)
                     outputs[r] = tmp_output
                     #print("outputs: ", outputs)
                     output = output and bool(tmp_output)
-                print("output: ", output)
+                #print("output: ", output)
                 
                 confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
                 min_prob = np.min(confidence)
                 if min_prob < threshold:
-                    sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames, self.observableFeaturesNames)
+                    sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames)
                 confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
 
                 return sample, confidence, outputs   
             else:
-                print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
+                #print("We are inside polytiope ", min_dist_index_observable, " for the observable features but not for the controllable ones, we will go there")
                 polytope = self.explanations[min_dist_index_observable]
-                print("Polytope: ", polytope)
+                #print("Polytope: ", polytope)
 
                 sample = self.go_inside_CF_given_polytope(sample, polytope, self.controllableFeaturesNames, self.observableFeaturesNames)
-                print("Sample after going inside: ", sample)
+                #print("Sample after going inside: ", sample)
                 #check is its now inside the polytope
                 for i, f_name in enumerate(self.controllableFeaturesNames):
                     inside = self.__inside(sample[i], polytope[f_name])
                     if not inside:
-                        print("sample not inside for feature: ", f_name)
+                        #print("sample not inside for feature: ", f_name)
                         inside = False
                 for i, f_name in enumerate(self.observableFeaturesNames):
                     inside = self.__inside(sample[i+3], polytope[f_name])
                     if not inside:
-                        print("sample not inside for feature: ", f_name)
+                        #print("sample not inside for feature: ", f_name)
                         inside = False
-                if inside:
-                    print("The sample is now inside the polytope for the controllable features too!")
+                #if inside:
+                    #print("The sample is now inside the polytope for the controllable features too!")
                 
                 #Evaluate the sample with the model
                 outputs = np.zeros(len(self.reqNames))
                 output = True
                 for r, req in enumerate(self.reqNames):
-                    print(f"___________Requirement {req}___________")
+                    #print(f"___________Requirement {req}___________")
                     
                     #classify the samples with the model
                     tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
-                    print("tmp_output: ", tmp_output)
+                    #print("tmp_output: ", tmp_output)
                     outputs[r] = tmp_output
                     output = output and bool(tmp_output)
-                print("output: ", output)
+                #print("output: ", output)
                 contr_f_dist, obs_f_dist, min_dist_controllable, min_dist_index_controllable, min_dist_observable, min_dist_index_observable = self.min_dist_polytope(sample, self.explanations, self.controllableFeaturesNames, self.observableFeaturesNames)
                 confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
                 min_prob = np.min(confidence)
                 if min_prob < threshold:
-                    sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames, self.observableFeaturesNames)
+                    sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames)
                 confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
                 return sample, confidence, outputs   
         else:
-            print("The sample is not in the polytope for the observable features!")
-            print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
+            #print("The sample is not in the polytope for the observable features!")
+            #print("The closest polytope for NCF is at dist: ",obs_f_dist[min_dist_index_observable])
             #Now we want to change the CF to get as close as possible to that polytope
             polytope = self.explanations[min_dist_index_observable]
-            print("Polytope: ", polytope)
+            #print("Polytope: ", polytope)
 
             sample = self.go_inside_CF_given_polytope(sample, polytope, self.controllableFeaturesNames, self.observableFeaturesNames)
-            print("Sample after going closer: ", sample)
+            #print("Sample after going closer: ", sample)
 
             #check is its now inside the polytope for the CF
             for i, f_name in enumerate(self.controllableFeaturesNames):
                 inside = self.__inside(sample[i], polytope[f_name])
                 if not inside:
-                    print("sample not inside for feature: ", f_name)
+                    #print("sample not inside for feature: ", f_name)
                     inside = False
             for i, f_name in enumerate(self.observableFeaturesNames):
                 inside = self.__inside(sample[i+3], polytope[f_name])
                 if not inside:
-                    print("sample not inside for feature: ", f_name)
+                    #print("sample not inside for feature: ", f_name)
                     inside = False
-            if inside:
-                print("The sample is now inside the polytope for the controllable features!")
+            #if inside:
+                #print("The sample is now inside the polytope for the controllable features!")
             #Evaluate the sample with the model
             
             outputs = np.zeros(len(self.reqNames))
             output = True
             for r, req in enumerate(self.reqNames):
-                print(f"___________Requirement {req}___________")
+                #print(f"___________Requirement {req}___________")
                 
                 #classify the samplsses with the model
                 tmp_output = self.reqClassifiers[r].predict(sample.reshape(1, -1))
-                print("tmp_output: ", tmp_output)
+                #print("tmp_output: ", tmp_output)
                 outputs[r] = tmp_output
                 output = output and bool(tmp_output)
             confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
             min_prob = np.min(confidence)
             if min_prob < threshold:
-                sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames, self.observableFeaturesNames)
+                sample = self.findBestAdaptation(sample, self.explanations[min_dist_index_observable], self.controllableFeaturesNames)
             confidence =  vecPredictProba(self.reqClassifiers, sample.reshape(1, -1))
             return sample, confidence, outputs           
             
@@ -1018,8 +1018,9 @@ class AnchorsPlanner:
         return sample
 
 
-    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=1000):
+    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=100):
         delta_controllable_features = []
+        #print("sample: ", sample)
         for i, f_name in enumerate(controllable_features):
             a, b = polytope[f_name][0], polytope[f_name][1]
             if a == -inf:
@@ -1031,29 +1032,38 @@ class AnchorsPlanner:
             else:
                 delta = (b-a) * 0.1 #We need to move forward
             delta_controllable_features.append(delta)
-        print("delta_controllable_features: ", delta_controllable_features)
-
+        #print("delta_controllable_features: ", delta_controllable_features)
+        #print("Starting to find the best adaptation for the sample: ", sample)
         n_iter = 0
         max_prob = 0
         current_max_prob = 0
-        while n_iter < max_iter or max_prob <= threshold:
+        early_stopping_condition_counter = 0
+        adapted_sample = sample
+        while n_iter < max_iter and max_prob < threshold:
             for i, f_name in enumerate(controllable_features):
-                print("a")
-                adapted_sample = sample.copy()
+                #print("Moving on feature: ", f_name, " with delta: ", delta_controllable_features[i])
                 adapted_sample[i] += delta_controllable_features[i]
+                #print("adapted_sample: ", adapted_sample)
                 if adapted_sample[i] >= polytope[f_name][1] or adapted_sample[i] <= polytope[f_name][0]: #If we are outside the bounds of the polytope, we need to stop
-                    print("a dentro")
                     break
                 probs = vecPredictProba(self.reqClassifiers, adapted_sample.reshape(1, -1))
                 current_max_prob = np.min(probs) #This is the minimum probability across all models for the adapted sample
-                if current_max_prob > max_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
-                    print("a")
+                #print("probs: ", probs)
+                #print("Current max probability for adapted sample: ", current_max_prob)
+                if current_max_prob >= max_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
+                    #NB: It needs to be >= or else we get stuck at doing the same loop over and over again
+                    #print("New best sample found: ", adapted_sample, " with highest minimum probability: ", current_max_prob)
                     max_prob = current_max_prob
                     best_sample = adapted_sample.copy()
-                    print("New best sample found: ", best_sample, " with highest minimum probability: ", max_prob)
-
+                #print(n_iter, " - Best sample so far: ", best_sample, " with highest minimum probability: ", max_prob)
                 n_iter += 1
-            print("Best sample found: ", best_sample, " with highest minimum probability: ", max_prob)
-            sample = best_sample
+                adapted_sample[i] -= delta_controllable_features[i]
+            #print(n_iter, " - Best sample so far: ", best_sample, " with highest minimum probability: ", max_prob)
+            if current_max_prob == max_prob:
+                early_stopping_condition_counter += 1
+            if early_stopping_condition_counter >= 50:
+                #print("Early stopping condition met, stopping the search for the best adaptation.")
+                break
+            adapted_sample = best_sample.copy() #Reset the adapted sample to the best sample found so far
         
         return best_sample
