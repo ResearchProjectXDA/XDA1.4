@@ -41,17 +41,19 @@ class AnchorsPlanner:
         print("Requirements classifiers: ", reqClassifiers)
 
         training_df = pd.read_csv(training_dataset)
+        print("Training dataset loaded: ", training_df.shape)
         all_true_training = training_df[
             (training_df['req_0'] == 1) &
             (training_df['req_1'] == 1) &
             (training_df['req_2'] == 1) &
             (training_df['req_3'] == 1)
         ].drop(columns=reqNames)
+        print("Training dataset with all requirements satisfied: ", all_true_training.shape)
 
         datasets = []
         true_from_anchors_df = {}
-
         features_to_use = [i for i in range(feature_number)]
+
         for i,r in enumerate(reqNames):
             datasets.append(\
                 utils.load_csv_dataset(\
@@ -60,7 +62,7 @@ class AnchorsPlanner:
                     categorical_features=None))
             
             true_from_anchors_df[r] = np.nonzero(datasets[i].labels_train)[0]
-            print('Training samples with {} satisfied: '.format(r), true_from_anchors_df[r].shape)
+            print('Training samples with {} satisfied: '.format(r), true_from_anchors_df[r].shape, "over ", datasets[i].train.shape[0])
 
         explainer = []
         req_number = len(reqNames)
@@ -71,10 +73,13 @@ class AnchorsPlanner:
                 datasets[i].feature_names,
                 datasets[i].train,
                 datasets[i].categorical_names)) 
-        
+        print("Datasets[0]: ", datasets[0].train.shape, datasets[0].labels_train.shape)
+        print("Datasets[1]: ", datasets[1].train.shape, datasets[1].labels_train.shape)
+        print("Datasets[2]: ", datasets[2].train.shape, datasets[2].labels_train.shape)
+        print("Datasets[3]: ", datasets[3].train.shape, datasets[3].labels_train.shape)
+
         for i in range(req_number):
             print(f"Model {i+1} training accuracy: {accuracy_score(datasets[i].labels_train, reqClassifiers[i].predict(datasets[i].train)):.4f}")
-
 
         for i, req in enumerate(reqNames):
             print(f"___________Requirement {i+1}: {req}___________")
@@ -101,6 +106,32 @@ class AnchorsPlanner:
         m_r_p = real_values.shape[0] - np.intersect1d(real_values, positively_classified).shape[0]
         print(f"Number of missclassified real positives: {m_r_p}")
 
+        final = np.ones(datasets[0].train.shape[0])
+        real_values = np.ones(datasets[0].train.shape[0])
+        for i, req in enumerate(reqNames):
+            print(f"___________Requirement {i+1}: {req}___________")
+            output = reqClassifiers[i].predict(datasets[i].train)
+            #obtain the indices of the samples that have the requirement satisfied (truly in the dataset)
+            real_values_single_req = datasets[i].labels_train
+            
+            if(i == 0):
+                final = output
+                real_values = real_values_single_req
+            else:
+                final *= final
+                real_values *= real_values_single_req
+
+        negatively_classified = np.where(final == 0)[0]
+        true_negative = np.where(real_values == 0)[0]
+
+        print(f"Number of samples with not all requirements satisfied (according to model): {negatively_classified.shape[0]}")
+        print(f"Number of samples with not all requirements satisfied (real data): {true_negative.shape[0]}")
+        #calculate false negatives
+        f_n = negatively_classified.shape[0]- np.intersect1d(true_negative, negatively_classified).shape[0]
+        print(f"Number of false negatives from model: {f_n}")
+        #calculate the missclassified real negative
+        m_r_n = true_negative.shape[0] - np.intersect1d(true_negative, negatively_classified).shape[0]
+        print(f"Number of missclassified real negatives: {m_r_n}")
 
         explanations = []
 
@@ -141,6 +172,8 @@ class AnchorsPlanner:
                 missing = 0
             explanations_reordered.append(exp_reordered)
             self.explanations = explanations_reordered
+        
+        #self.negative_explanations = self.create_negative_anchors(negatively_classified, datasets, self.reqClassifiers, req_number, explainer)
 
     def process_positive_sample(self,j, positively_classified, datasets, models, req_number):
         p_sample = positively_classified[j]
@@ -159,6 +192,50 @@ class AnchorsPlanner:
                     intersected_exp[quoted] = self.__intersect(intersected_exp[quoted], parsed)
 
         return intersected_exp
+
+    def create_negative_anchors(self, negatively_classified, datasets, models, req_number, explainer):
+        print("Starting negative explanations creation...")
+        explanations = []
+
+        for j, p_sample in enumerate(negatively_classified):
+            intersected_exp = {}
+            for i in range(req_number):
+                #get the sample
+                sample = datasets[i].train[p_sample]
+                #explain the sample
+                exp = explainer[i].explain_instance(sample, self.reqClassifiers[i].predict, threshold=0.95)
+                #get the textual explanation
+                exp = exp.names()
+                #transform the textual explanations in an interval
+                for boundings in exp:
+                    quoted, rest = self.__get_anchor(boundings)            
+                    if(quoted not in intersected_exp):
+                        intersected_exp[quoted] = self.__parse_range(rest)
+                    else:
+                        intersected_exp[quoted] = self.__intersect(intersected_exp[quoted], self.__parse_range(rest))
+
+            #prepare the data structure
+            explanations.append(intersected_exp)
+        
+        missing = 0
+        explanations_reordered = []
+        for exp in explanations:
+            exp_reordered = {}
+            for k in self.feature_names:
+                if k in exp:
+                    exp_reordered[k] = exp[k]
+                else:
+                    exp_reordered[k] = (-inf, inf, False, False)
+                    print(k, "missing, added: ", exp_reordered[k])
+                    index = explanations.index(exp)
+                    missing = 1
+            if missing:
+                print(exp_reordered)
+                missing = 0
+            explanations_reordered.append(exp_reordered)
+            self.explanations = explanations_reordered
+        
+        return explanations_reordered
     
     def __get_anchor(self, a)-> tuple:
         """
@@ -346,13 +423,13 @@ class AnchorsPlanner:
                         #print(input[i,nk], thresholds[j][k])
                         if not (self.__inside(input[i,nk], thresholds[j][k])):
                             flag = False
-                            out[i] = 0
+                            out[i] = 0 #If the sample is not inside the anchor for some feature, we set the output to 0
                             break
                 if flag:
                     break
                 else:
                     flag = True
-            
+            #For each sample out will be 1 if it is inside the anchor for all features, 0 otherwise
         return out
     
     def coverage(self, tab, feat_names)-> float:
@@ -1036,7 +1113,7 @@ class AnchorsPlanner:
         #print("Starting to find the best adaptation for the sample: ", sample)
         n_iter = 0
         max_prob = 0
-        current_max_prob = 0
+        current_avg_prob = 0
         early_stopping_condition_counter = 0
         adapted_sample = sample
         while n_iter < max_iter and max_prob < threshold:
@@ -1047,19 +1124,84 @@ class AnchorsPlanner:
                 if adapted_sample[i] >= polytope[f_name][1] or adapted_sample[i] <= polytope[f_name][0]: #If we are outside the bounds of the polytope, we need to stop
                     break
                 probs = vecPredictProba(self.reqClassifiers, adapted_sample.reshape(1, -1))
-                current_max_prob = np.min(probs) #This is the minimum probability across all models for the adapted sample
-                #print("probs: ", probs)
-                #print("Current max probability for adapted sample: ", current_max_prob)
-                if current_max_prob >= max_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
+                
+                probs = np.minimum(probs, threshold)
+                current_avg_prob = np.mean(probs)
+
+                if current_avg_prob >= max_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
                     #NB: It needs to be >= or else we get stuck at doing the same loop over and over again
                     #print("New best sample found: ", adapted_sample, " with highest minimum probability: ", current_max_prob)
-                    max_prob = current_max_prob
+                    max_prob = current_avg_prob
                     best_sample = adapted_sample.copy()
                 #print(n_iter, " - Best sample so far: ", best_sample, " with highest minimum probability: ", max_prob)
                 n_iter += 1
                 adapted_sample[i] -= delta_controllable_features[i]
             #print(n_iter, " - Best sample so far: ", best_sample, " with highest minimum probability: ", max_prob)
-            if current_max_prob == max_prob:
+            if current_avg_prob == max_prob:
+                early_stopping_condition_counter += 1
+            if early_stopping_condition_counter >= 50:
+                #print("Early stopping condition met, stopping the search for the best adaptation.")
+                break
+            adapted_sample = best_sample.copy() #Reset the adapted sample to the best sample found so far
+        
+        return best_sample
+
+    def findBestAdaptationUsingNegatives(self, sample, polytope, controllable_features, threshold=0.8, max_iter=100):
+        delta_controllable_features = []
+        #print("sample: ", sample)
+        for i, f_name in enumerate(controllable_features):
+            a, b = polytope[f_name][0], polytope[f_name][1]
+            if a == -inf:
+                a = 0
+            if b == inf:
+                b = 100
+            if (b-sample[i]) < (sample[i]-a):
+                delta = - (b-a) * 0.1 #We need to move backwards
+            else:
+                delta = (b-a) * 0.1 #We need to move forward
+            delta_controllable_features.append(delta)
+        #print("delta_controllable_features: ", delta_controllable_features)
+        #print("Starting to find the best adaptation for the sample: ", sample)
+        n_iter = 0
+        max_prob = 0
+        current_avg_prob = 0
+        early_stopping_condition_counter = 0
+        adapted_sample = sample
+        while n_iter < max_iter and max_prob < threshold:
+            for i, f_name in enumerate(controllable_features):
+                #print("Moving on feature: ", f_name, " with delta: ", delta_controllable_features[i])
+                starting_value = adapted_sample[i]
+                adapted_sample[i] += delta_controllable_features[i]
+                #print("adapted_sample: ", adapted_sample)
+                if adapted_sample[i] >= min(100,polytope[f_name][1]) or adapted_sample[i] <= max(0,polytope[f_name][0]): #If we are outside the bounds of the polytope, we need to stop
+                    break
+                adapted_sample_array = np.array(adapted_sample).reshape(1, -1)
+                in_negatives = self.classify(adapted_sample_array, self.negative_explanations, self.feature_names)
+                while in_negatives == 1:
+                    #print("Adapted sample is in the negatives, trying to adapt it further")
+                    adapted_sample[i] += delta_controllable_features[i]
+                    print("adapted_sample: ", adapted_sample)
+                    if adapted_sample[i] >= min(100,polytope[f_name][1]) or adapted_sample[i] <= max(0,polytope[f_name][0]):
+                        print("Adapted sample is outside the bounds of the polytope, stopping the search for the best adaptation for feature: ", f_name)
+                        break
+                    adapted_sample_array = np.array(adapted_sample).reshape(1, -1)
+                    in_negatives = self.classify(adapted_sample_array, self.negative_explanations, self.feature_names)
+                    print("in_negatives: ", in_negatives)
+                probs = vecPredictProba(self.reqClassifiers, adapted_sample.reshape(1, -1))
+                
+                probs = np.minimum(probs, threshold)
+                current_avg_prob = np.mean(probs)
+
+                if current_avg_prob >= max_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
+                    #NB: It needs to be >= or else we get stuck at doing the same loop over and over again
+                    #print("New best sample found: ", adapted_sample, " with highest minimum probability: ", current_max_prob)
+                    max_prob = current_avg_prob
+                    best_sample = adapted_sample.copy()
+                #print(n_iter, " - Best sample so far: ", best_sample, " with highest minimum probability: ", max_prob)
+                n_iter += 1
+                adapted_sample[i] = starting_value
+            #print(n_iter, " - Best sample so far: ", best_sample, " with highest minimum probability: ", max_prob)
+            if current_avg_prob == max_prob:
                 early_stopping_condition_counter += 1
             if early_stopping_condition_counter >= 50:
                 #print("Early stopping condition met, stopping the search for the best adaptation.")

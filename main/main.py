@@ -91,12 +91,55 @@ if __name__ == '__main__':
 
     targetConfidence = np.full((1, n_reqs), 0.8)[0]
 
-    # split the dataset
+    #split the dataset
     X = ds.loc[:, featureNames]
     y = ds.loc[:, reqs]
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
+
+
+    positives_req0 = ds.loc[ds['req_0'] == 1]
+    positives_req1 = ds.loc[ds['req_1'] == 1]
+    positives_req2 = ds.loc[ds['req_2'] == 1]
+    positives_req3 = ds.loc[ds['req_3'] == 1]
+
+    print(Fore.GREEN + "Number of positive samples for req_0: " + str(positives_req0.shape[0]) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of positive samples for req_1: " + str(positives_req1.shape[0]) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of positive samples for req_2: " + str(positives_req2.shape[0]) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of positive samples for req_3: " + str(positives_req3.shape[0]) + Style.RESET_ALL)
+    # # Step 1: Extract 700 positives for each requirement
+    # positives_req0 = ds.loc[ds['req_0'] == 1].sample(n=700, random_state=42)
+    # positives_req1 = ds.loc[ds['req_1'] == 1].sample(n=700, random_state=42)
+    # positives_req2 = ds.loc[ds['req_2'] == 1].sample(n=700, random_state=42)
+    # positives_req3 = ds.loc[ds['req_3'] == 1].sample(n=700, random_state=42)
+
+    # print(Fore.GREEN + "Number of positive samples for req_0: " + str(positives_req0.shape[0]) + Style.RESET_ALL)
+    # print(Fore.GREEN + "Number of positive samples for req_1: " + str(positives_req1.shape[0]) + Style.RESET_ALL)
+    # print(Fore.GREEN + "Number of positive samples for req_2: " + str(positives_req2.shape[0]) + Style.RESET_ALL)
+    # print(Fore.GREEN + "Number of positive samples for req_3: " + str(positives_req3.shape[0]) + Style.RESET_ALL)
+
+    # # Step 2: Combine forced positive samples
+    # forced_train_indices = positives_req0.index.union(positives_req1.index).union(positives_req2.index).union(positives_req3.index)
+    # forced_train = ds.loc[forced_train_indices]
+
+    # # Step 3: Remove forced training samples from the dataset
+    # remaining_ds = ds.drop(index=forced_train_indices)
+
+    # # Step 4: Split the remaining data into train/test (80/20)
+    # X_remaining = remaining_ds[featureNames]
+    # y_remaining = remaining_ds[reqs]
+
+    # X_rem_train, X_test, y_rem_train, y_test = train_test_split(
+    #     X_remaining, y_remaining, test_size=0.2, random_state=42
+    # )
+
+    # # Step 5: Merge forced positive samples into training set
+    # X_train = pd.concat([X_rem_train, forced_train[featureNames]], axis=0)
+    # y_train = pd.concat([y_rem_train, forced_train[reqs]], axis=0)
+
+    # print(Fore.GREEN + "Number of training samples: " + str(X_train.shape[0]) + Style.RESET_ALL)
+    # print(Fore.GREEN + "Number of test samples: " + str(X_test.shape[0]) + Style.RESET_ALL)
 
     models = []
     for req in reqs:
@@ -186,7 +229,7 @@ if __name__ == '__main__':
     for f in files:
         os.remove(f)
 
-    testNum = 10
+    testNum = X_test.shape[0]
     outputs_anchors = np.zeros((testNum, n_reqs))
     outputs_PDP = np.zeros((testNum, n_reqs))
     outputs_NSGA = np.zeros((testNum, n_reqs))
@@ -381,6 +424,43 @@ if __name__ == '__main__':
         #                       RandomCustomConfidence,
         #                       RandomCustomScore,
         #                       RandomcustomTime])
+
+        if(k % 10 == 0):
+            print("Checking results... at test " + str(k))
+            num_well_classified_anchors = np.where(np.all(outputs_anchors[:k,:] >= 0.5, axis=1))[0].shape[0]
+            num_misclassified_req0_anchors = np.where(outputs_anchors[:k, 0] < 0.5)[0].shape[0]
+            num_misclassified_req1_anchors = np.where(outputs_anchors[:k, 1] < 0.5)[0].shape[0]
+            num_misclassified_req2_anchors = np.where(outputs_anchors[:k, 2] < 0.5)[0].shape[0]
+            num_misclassified_req3_anchors = np.where(outputs_anchors[:k, 3] < 0.5)[0].shape[0]
+
+            num_well_classified_custom = np.where(np.all(outputs_PDP[:k,:] >= 0.5, axis=1))[0].shape[0]
+            num_misclassified_req0_custom = np.where(outputs_PDP[:k, 0] < 0.5)[0].shape[0]
+            num_misclassified_req1_custom = np.where(outputs_PDP[:k, 1] < 0.5)[0].shape[0]
+            num_misclassified_req2_custom = np.where(outputs_PDP[:k, 2] < 0.5)[0].shape[0]
+            num_misclassified_req3_custom = np.where(outputs_PDP[:k, 3] < 0.5)[0].shape[0]
+
+            num_well_classified_nsga = np.where(np.all(outputs_NSGA[:k,:] >= 0.5, axis=1))[0].shape[0]
+            num_misclassified_req0_nsga = np.where(outputs_NSGA[:k, 0] < 0.5)[0].shape[0]
+            num_misclassified_req1_nsga = np.where(outputs_NSGA[:k, 1] < 0.5)[0].shape[0]
+            num_misclassified_req2_nsga = np.where(outputs_NSGA[:k, 2] < 0.5)[0].shape[0]
+            num_misclassified_req3_nsga = np.where(outputs_NSGA[:k, 3] < 0.5)[0].shape[0]
+
+            print(Fore.GREEN + "Number of well classified Anchors: " + str(num_well_classified_anchors) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req0 Anchors: " + str(num_misclassified_req0_anchors) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req1 Anchors: " + str(num_misclassified_req1_anchors) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req2 Anchors: " + str(num_misclassified_req2_anchors) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req3 Anchors: " + str(num_misclassified_req3_anchors) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of well classified Custom: " + str(num_well_classified_custom) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req0 Custom: " + str(num_misclassified_req0_custom) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req1 Custom: " + str(num_misclassified_req1_custom) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req2 Custom: " + str(num_misclassified_req2_custom) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req3 Custom: " + str(num_misclassified_req3_custom) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of well classified NSGA3: " + str(num_well_classified_nsga) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req0 NSGA3: " + str(num_misclassified_req0_nsga) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req1 NSGA3: " + str(num_misclassified_req1_nsga) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req2 NSGA3: " + str(num_misclassified_req2_nsga) + Style.RESET_ALL)
+            print(Fore.GREEN + "Number of misclassified req3 NSGA3: " + str(num_misclassified_req3_nsga) + Style.RESET_ALL) 
+
     
     #Metrics
     num_misclassified_req0_anchors = np.where(outputs_anchors[:, 0] < 0.5)[0].shape[0]
@@ -411,34 +491,6 @@ if __name__ == '__main__':
     print(Fore.GREEN + "Number of misclassified req2 NSGA3: " + str(num_misclassified_req2_nsga) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req3 NSGA3: " + str(num_misclassified_req3_nsga) + Style.RESET_ALL)
 
-    #Cross- entrhopy
-    cross_entropy_req0_anchors = -np.sum(np.log(outputs_anchors[:,0]))
-    cross_entropy_req1_anchors = -np.sum(np.log(outputs_anchors[:,1]))
-    cross_entropy_req2_anchors = -np.sum(np.log(outputs_anchors[:,2]))
-    cross_entropy_req3_anchors = -np.sum(np.log(outputs_anchors[:,3]))
-
-    cross_entropy_req0_custom = -np.sum(np.log(outputs_PDP[:,0]))
-    cross_entropy_req1_custom = -np.sum(np.log(outputs_PDP[:,1]))
-    cross_entropy_req2_custom = -np.sum(np.log(outputs_PDP[:,2]))
-    cross_entropy_req3_custom = -np.sum(np.log(outputs_PDP[:,3]))
-
-    cross_entropy_req0_nsga = -np.sum(np.log(outputs_NSGA[:,0]))
-    cross_entropy_req1_nsga = -np.sum(np.log(outputs_NSGA[:,1]))
-    cross_entropy_req2_nsga = -np.sum(np.log(outputs_NSGA[:,2]))
-    cross_entropy_req3_nsga = -np.sum(np.log(outputs_NSGA[:,3]))
-
-    print(Fore.GREEN + "Cross-entropy req0 Anchors: " + str(cross_entropy_req0_anchors) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req1 Anchors: " + str(cross_entropy_req1_anchors) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req2 Anchors: " + str(cross_entropy_req2_anchors) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req3 Anchors: " + str(cross_entropy_req3_anchors) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req0 Custom: " + str(cross_entropy_req0_custom) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req1 Custom: " + str(cross_entropy_req1_custom) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req2 Custom: " + str(cross_entropy_req2_custom) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req3 Custom: " + str(cross_entropy_req3_custom) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req0 NSGA3: " + str(cross_entropy_req0_nsga) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req1 NSGA3: " + str(cross_entropy_req1_nsga) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req2 NSGA3: " + str(cross_entropy_req2_nsga) + Style.RESET_ALL)
-    print(Fore.GREEN + "Cross-entropy req3 NSGA3: " + str(cross_entropy_req3_nsga) + Style.RESET_ALL)
 
     resultsAnchors = pd.DataFrame(resultsAnchors, columns=["custom_adaptation",
                                                            "custom_confidence",
