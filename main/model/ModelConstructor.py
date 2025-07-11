@@ -10,6 +10,10 @@ from sklearn.neural_network import MLPClassifier  # Neural Network
 from sklearn.ensemble import GradientBoostingClassifier  # Gradient Boosting Machine (GBM)
 import xgboost as xgb  # eXtreme Gradient Boosting Tree (xGBTree)
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score 
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
 
 
 def constructModel(X_train, X_test, y_train, y_test, export=False):
@@ -18,31 +22,80 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     lr_model = LogisticRegression(random_state=1234)
     lr_model.fit(X_train, y_train)
     lr_model_AUC = round(roc_auc_score(y_test, lr_model.predict_proba(X_test)[:, 1]), 3)
+    y_pred = lr_model.predict(X_test)
+    lr_model_f1 = round(f1_score(y_test, y_pred), 3)
+    print('Logistic Regression F1 score: ' + str(lr_model_f1))
+    lr_model_accuracy = round(accuracy_score(y_test, y_pred), 3)
+    print('Logistic Regression Accuracy score: ' + str(lr_model_accuracy))
+    lr_model_recall = round(recall_score(y_test, y_pred), 3)
+    print('Logistic Regression Recall score: ' + str(lr_model_recall))
+    lr_model_precision = round(precision_score(y_test, y_pred), 3)
+    print('Logistic Regression Precision score: ' + str(lr_model_precision))
 
     # Random Forests
     rf_model = RandomForestClassifier(random_state=1234, n_jobs=10)
     rf_model.fit(X_train, y_train)
     rf_model_AUC = round(roc_auc_score(y_test, rf_model.predict_proba(X_test)[:, 1]), 3)
+    rf_model_f1 = round(f1_score(y_test, rf_model.predict(X_test)), 3)
+    print('Random Forests F1 score: ' + str(rf_model_f1))
+    rf_model_accuracy = round(accuracy_score(y_test, rf_model.predict(X_test)), 3)
+    print('Random Forests Accuracy score: ' + str(rf_model_accuracy))
+    rf_model_recall = round(recall_score(y_test, rf_model.predict(X_test)), 3)
+    print('Random Forests Recall score: ' + str(rf_model_recall))
+    rf_model_precision = round(precision_score(y_test, rf_model.predict(X_test)), 3)
+    print('Random Forests Precision score: ' + str(rf_model_precision))
 
     # C5.0 (Decision Tree)
     dt_model = DecisionTreeClassifier(random_state=1234)
     dt_model.fit(X_train, y_train)
     dt_model_AUC = round(roc_auc_score(y_test, dt_model.predict_proba(X_test)[:, 1]), 3)
+    dt_model_f1 = round(f1_score(y_test, dt_model.predict(X_test)), 3)
+    print('C5.0 (Decision Tree) F1 score: ' + str(dt_model_f1))
+    dt_model_accuracy = round(accuracy_score(y_test, dt_model.predict(X_test)), 3)
+    print('C5.0 (Decision Tree) Accuracy score: ' + str(dt_model_accuracy))
+    dt_model_recall = round(recall_score(y_test, dt_model.predict(X_test)), 3)
+    print('C5.0 (Decision Tree) Recall score: ' + str(dt_model_recall))
+    dt_model_precision = round(precision_score(y_test, dt_model.predict(X_test)), 3)
+    print('C5.0 (Decision Tree) Precision score: ' + str(dt_model_precision))
 
     # Neural Network
     nn_model = MLPClassifier(random_state=1234)
     nn_model.fit(X_train, y_train)
     nn_model_AUC = round(roc_auc_score(y_test, nn_model.predict_proba(X_test)[:, 1]), 3)
+    nn_model_f1 = round(f1_score(y_test, nn_model.predict(X_test)), 3)
+    print('Neural Network F1 score: ' + str(nn_model_f1))
+    nn_model_accuracy = round(accuracy_score(y_test, nn_model.predict(X_test)), 3)
+    print('Neural Network Accuracy score: ' + str(nn_model_accuracy))
+    nn_model_recall = round(recall_score(y_test, nn_model.predict(X_test)), 3)
+    print('Neural Network Recall score: ' + str(nn_model_recall))
+    nn_model_precision = round(precision_score(y_test, nn_model.predict(X_test)), 3)
+    print('Neural Network Precision score: ' + str(nn_model_precision))
 
     # Gradient Boosting Machine (GBM)
     gbm_model = GradientBoostingClassifier(random_state=1234)
     gbm_model.fit(X_train, y_train)
     gbm_model_AUC = round(roc_auc_score(y_test, gbm_model.predict_proba(X_test)[:, 1]), 3)
+    gbm_model_f1 = round(f1_score(y_test, gbm_model.predict(X_test)), 3)
+    print('Gradient Boosting Machine (GBM) F1 score: ' + str(gbm_model_f1))
+    gbm_model_accuracy = round(accuracy_score(y_test, gbm_model.predict(X_test)), 3)
+    print('Gradient Boosting Machine (GBM) Accuracy score: ' + str(gbm_model_accuracy))
+    gbm_model_recall = round(recall_score(y_test, gbm_model.predict(X_test)), 3)
+    print('Gradient Boosting Machine (GBM) Recall score: ' + str(gbm_model_recall))
+    gbm_model_precision = round(precision_score(y_test, gbm_model.predict(X_test)), 3)
+    print('Gradient Boosting Machine (GBM) Precision score: ' + str(gbm_model_precision))
 
     # eXtreme Gradient Boosting Tree (xGBTree)
     xgb_model = xgb.XGBClassifier(random_state=1234)
     xgb_model.fit(X_train, y_train)
     xgb_model_AUC = round(roc_auc_score(y_test, xgb_model.predict_proba(X_test)[:, 1]), 3)
+    xgb_model_f1 = round(f1_score(y_test, xgb_model.predict(X_test)), 3)
+    print('eXtreme Gradient Boosting Tree (xGBTree) F1 score: ' + str(xgb_model_f1))
+    xgb_model_accuracy = round(accuracy_score(y_test, xgb_model.predict(X_test)), 3)
+    print('eXtreme Gradient Boosting Tree (xGBTree) Accuracy score: ' + str(xgb_model_accuracy))
+    xgb_model_recall = round(recall_score(y_test, xgb_model.predict(X_test)), 3)
+    print('eXtreme Gradient Boosting Tree (xGBTree) Recall score: ' + str(xgb_model_recall))
+    xgb_model_precision = round(precision_score(y_test, xgb_model.predict(X_test)), 3)
+    print('eXtreme Gradient Boosting Tree (xGBTree) Precision score: ' + str(xgb_model_precision))
 
     models = {
         'Logistic Regression': lr_model,
@@ -53,13 +106,13 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
         'eXtreme Gradient Boosting Tree (xGBTree)': xgb_model,
     }
 
-    # Summarise into a DataFrame
+    # Summarise into a DataFrame using F1 scores
     model_performance_df = pd.DataFrame(data=np.array([list(models.keys()),
-                [lr_model_AUC, rf_model_AUC, dt_model_AUC, nn_model_AUC, gbm_model_AUC, xgb_model_AUC]]).transpose(),
+                [lr_model_f1, rf_model_f1, dt_model_f1, nn_model_f1, gbm_model_f1, xgb_model_f1]]).transpose(),
                 index=range(6),
-                columns=['Model', 'AUC'])
-    model_performance_df['AUC'] = model_performance_df.AUC.astype(float)
-    model_performance_df = model_performance_df.sort_values(by=['AUC'], ascending=False)
+                columns=['Model', 'F1'])
+    model_performance_df['F1'] = model_performance_df.F1.astype(float)
+    model_performance_df = model_performance_df.sort_values(by=['F1'], ascending=False)
 
     bestModel = model_performance_df.iloc[0].iloc[0]
 
@@ -69,9 +122,9 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     # Visualise the performance of defect models
     if export:
         display(model_performance_df)
-        model_performance_df.plot(kind='barh', y='AUC', x='Model')
+        model_performance_df.plot(kind='barh', y='F1', x='Model')
         plt.tight_layout()
-        plt.savefig('../plots/AUC.png')
+        plt.savefig('../plots/F1.png')
         plt.show()
 
     return models[bestModel]
