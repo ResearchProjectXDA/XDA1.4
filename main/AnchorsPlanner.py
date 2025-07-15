@@ -1095,10 +1095,94 @@ class AnchorsPlanner:
         return sample
 
 
-    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=1000):
+    # def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=1000):
+    #     delta_controllable_features = []
+    #     #print("sample: ", sample)
+    #     for i, f_name in enumerate(controllable_features):
+    #         a, b = polytope[f_name][0], polytope[f_name][1]
+    #         if a == -inf:
+    #             a = 0
+    #         if b == inf:
+    #             b = 100
+    #         if (b-sample[i]) < (sample[i]-a):
+    #             delta = - (b-a) * 0.1 #We need to move backwards
+    #         else:
+    #             delta = (b-a) * 0.1 #We need to move forward
+    #         delta_controllable_features.append(delta)
+    #     #print("delta_controllable_features: ", delta_controllable_features)
+    #     #print("Starting to find the best adaptation for the sample: ", sample)
+    #     n_iter = 0
+    #     min_prob = 0
+    #     best_avg_prob = 0
+    #     old_best_avg_prob = best_avg_prob
+    #     current_avg_prob = 0
+    #     early_stopping_condition_counter = 0
+    #     adapted_sample = sample
+    #     outOfBounds_feature_counter = 0
+    #     best_sample_iteration = 0
+
+    #     #Paramteres added in order not to stall after we find the best sample
+    #     best_current_adaptation = adapted_sample.copy()
+    #     best_current_adaptation_avg_prob = 0
+
+    #     while n_iter < max_iter and min_prob < threshold:
+    #         for i, f_name in enumerate(controllable_features):
+    #             #print("Moving on feature: ", f_name, " with delta: ", delta_controllable_features[i])
+    #             adapted_sample[i] += delta_controllable_features[i]
+    #             #print("adapted_sample: ", adapted_sample)
+    #             n_iter += 1
+    #             #print("Boundaries for feature ", f_name, ": ", polytope[f_name])
+    #             if adapted_sample[i] >= min(polytope[f_name][1], 100) or adapted_sample[i] <= max(0,polytope[f_name][0]): #If we are outside the bounds of the polytope, we need to stop
+    #                 #print("Adapted sample is outside the bounds of the polytope, stopping the search for the best adaptation for feature, bounds: ", polytope[f_name])
+    #                 adapted_sample[i] -= delta_controllable_features[i]
+    #                 outOfBounds_feature_counter += 1
+    #             else:
+    #                 outOfBounds_feature_counter = 0
+    #                 probs = vecPredictProba(self.reqClassifiers, adapted_sample.reshape(1, -1))
+    #                 probs = np.minimum(probs, threshold)
+    #                 current_avg_prob = np.mean(probs)
+    #                 #print("current_avg_prob: ", current_avg_prob, " for adapted_sample: ", adapted_sample)
+    #                 if current_avg_prob >= best_avg_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
+    #                     #NB: It needs to be >= or else we get stuck at doing the same loop over and over again
+    #                     #print("New best sample found: ", adapted_sample, " with highest avg probability: ", current_avg_prob)
+    #                     best_avg_prob = current_avg_prob
+    #                     min_prob = np.min(probs)
+    #                     best_sample = adapted_sample.copy()
+    #                     best_sample_iteration = n_iter
+    #                     #print("We got a new best sample: ", best_sample, " with avg probability: ", best_avg_prob, " and min probability: ", min_prob)
+
+    #                 if current_avg_prob >= best_current_adaptation_avg_prob:
+    #                     best_current_adaptation_avg_prob = current_avg_prob
+    #                     best_current_adaptation = adapted_sample.copy()
+    #                     #print("New best current adaptation found: ", best_current_adaptation, " with avg probability: ", best_current_adaptation_avg_prob)
+    #                 adapted_sample[i] -= delta_controllable_features[i]
+
+            
+    #         if outOfBounds_feature_counter == len(controllable_features):
+    #             #print("All features are out of bounds, stopping the search for the best adaptation.")
+    #             break
+    #         #print(n_iter, " - Best sample so far: ", best_sample, " with highest avg probability: ", best_avg_prob, "at iteration: ", best_sample_iteration)
+    #         old_best_avg_prob = best_avg_prob
+    #         best_current_adaptation_avg_prob = 0
+
+    #         if best_avg_prob == old_best_avg_prob:
+    #             early_stopping_condition_counter += 1
+    #             #print("Early stopping condition counter: ", early_stopping_condition_counter)
+    #             adapted_sample = best_current_adaptation.copy() #Reset the adapted sample to the best current adaptation found so far
+    #             #We do this or else it will just keep looping the same adaptation
+    #         else:
+    #             early_stopping_condition_counter = 0
+    #             adapted_sample = best_sample.copy() #Reset the adapted sample to the best sample found so far
+    #         if early_stopping_condition_counter >= 50:
+    #             #print("Early stopping condition met, stopping the search for the best adaptation.")
+    #             break
+        
+    #     return best_sample
+
+    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=100):
         delta_controllable_features = []
         #print("sample: ", sample)
-        for i, f_name in enumerate(controllable_features):
+        for i, f_name in enumerate(controllable_features):#define the delta for each interval
             a, b = polytope[f_name][0], polytope[f_name][1]
             if a == -inf:
                 a = 0
@@ -1113,71 +1197,56 @@ class AnchorsPlanner:
         #print("Starting to find the best adaptation for the sample: ", sample)
         n_iter = 0
         min_prob = 0
-        best_avg_prob = 0
-        old_best_avg_prob = best_avg_prob
-        current_avg_prob = 0
-        early_stopping_condition_counter = 0
+                
         adapted_sample = sample
-        outOfBounds_feature_counter = 0
-        best_sample_iteration = 0
 
+        outOfBounds_feature_counter = 0
+        
         #Paramteres added in order not to stall after we find the best sample
-        best_current_adaptation = adapted_sample.copy()
-        best_current_adaptation_avg_prob = 0
 
         while n_iter < max_iter and min_prob < threshold:
-            for i, f_name in enumerate(controllable_features):
-                #print("Moving on feature: ", f_name, " with delta: ", delta_controllable_features[i])
-                adapted_sample[i] += delta_controllable_features[i]
-                #print("adapted_sample: ", adapted_sample)
-                n_iter += 1
-                #print("Boundaries for feature ", f_name, ": ", polytope[f_name])
-                if adapted_sample[i] >= min(polytope[f_name][1], 100) or adapted_sample[i] <= max(0,polytope[f_name][0]): #If we are outside the bounds of the polytope, we need to stop
-                    #print("Adapted sample is outside the bounds of the polytope, stopping the search for the best adaptation for feature, bounds: ", polytope[f_name])
-                    adapted_sample[i] -= delta_controllable_features[i]
-                    outOfBounds_feature_counter += 1
-                else:
-                    outOfBounds_feature_counter = 0
-                    probs = vecPredictProba(self.reqClassifiers, adapted_sample.reshape(1, -1))
-                    probs = np.minimum(probs, threshold)
-                    current_avg_prob = np.mean(probs)
-                    #print("current_avg_prob: ", current_avg_prob, " for adapted_sample: ", adapted_sample)
-                    if current_avg_prob >= best_avg_prob: #If the currect minimum probability is higher than the maximum minimum probability found so far
-                        #NB: It needs to be >= or else we get stuck at doing the same loop over and over again
-                        #print("New best sample found: ", adapted_sample, " with highest avg probability: ", current_avg_prob)
-                        best_avg_prob = current_avg_prob
-                        min_prob = np.min(probs)
-                        best_sample = adapted_sample.copy()
-                        best_sample_iteration = n_iter
-                        #print("We got a new best sample: ", best_sample, " with avg probability: ", best_avg_prob, " and min probability: ", min_prob)
+            current_MAX_avg_prob = 0
 
-                    if current_avg_prob >= best_current_adaptation_avg_prob:
-                        best_current_adaptation_avg_prob = current_avg_prob
-                        best_current_adaptation = adapted_sample.copy()
-                        #print("New best current adaptation found: ", best_current_adaptation, " with avg probability: ", best_current_adaptation_avg_prob)
-                    adapted_sample[i] -= delta_controllable_features[i]
-
+            outOfBounds_feature_counter = 0
+            curr_min_prob = 0
             
-            if outOfBounds_feature_counter == len(controllable_features):
-                #print("All features are out of bounds, stopping the search for the best adaptation.")
-                break
-            #print(n_iter, " - Best sample so far: ", best_sample, " with highest avg probability: ", best_avg_prob, "at iteration: ", best_sample_iteration)
-            old_best_avg_prob = best_avg_prob
-            best_current_adaptation_avg_prob = 0
+            current_max_adapted = adapted_sample.copy()
+            tmp_sample = adapted_sample.copy()
 
-            if best_avg_prob == old_best_avg_prob:
-                early_stopping_condition_counter += 1
-                #print("Early stopping condition counter: ", early_stopping_condition_counter)
-                adapted_sample = best_current_adaptation.copy() #Reset the adapted sample to the best current adaptation found so far
-                #We do this or else it will just keep looping the same adaptation
-            else:
-                early_stopping_condition_counter = 0
-                adapted_sample = best_sample.copy() #Reset the adapted sample to the best sample found so far
-            if early_stopping_condition_counter >= 50:
-                #print("Early stopping condition met, stopping the search for the best adaptation.")
+            for coeff in [1, -1]:
+                for i, f_name in enumerate(controllable_features):
+                    #print("Moving on feature: ", f_name, " with delta: ", delta_controllable_features[i])
+                    tmp_sample[i] =adapted_sample[i] + coeff*delta_controllable_features[i]
+                    #print("adapted_sample: ", adapted_sample)
+                    n_iter += 1
+                    #print("Boundaries for feature ", f_name, ": ", polytope[f_name])
+                    if tmp_sample[i] >= min(polytope[f_name][1], 100) or tmp_sample[i] <= max(0,polytope[f_name][0]): #If we are outside the bounds of the polytope, we need to stop
+                        #print("Adapted sample is outside the bounds of the polytope, stopping the search for the best adaptation for feature, bounds: ", polytope[f_name])
+                        outOfBounds_feature_counter += 1
+                    else:
+                        probs = vecPredictProba(self.reqClassifiers, tmp_sample.reshape(1, -1))
+                        probs = np.minimum(probs, threshold)
+                        current_avg_prob = np.mean(probs)
+                        #print("current_avg_prob: ", current_avg_prob, " for adapted_sample: ", adapted_sample)
+
+                        if current_avg_prob > current_MAX_avg_prob:
+                            current_MAX_avg_prob = current_avg_prob
+                            current_max_adapted = tmp_sample.copy()
+                            curr_min_prob = np.min(probs)
+
+            if outOfBounds_feature_counter == 2*len(controllable_features):
+                #print("All features are out of bounds, stopping the search for the best adaptation.")
+                outOfBounds_feature_counter = 0
                 break
-        
-        return best_sample
+            
+            if (adapted_sample == current_max_adapted).all():
+                break #If we are not changing the adapted sample, we can stop
+            
+            adapted_sample = current_max_adapted.copy() #Reset the adapted sample to the best sample found so far
+            min_prob = curr_min_prob #Update the minimum probability found so far
+            #print(n_iter, " - Best sample so far: ", best_sample, " with highest avg probability: ", best_avg_prob, "at iteration: ", best_sample_iteration)
+            
+        return adapted_sample
 
     def findBestAdaptationUsingNegatives(self, sample, polytope, controllable_features, threshold=0.8, max_iter=100):
         delta_controllable_features = []
