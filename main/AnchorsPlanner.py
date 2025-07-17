@@ -173,6 +173,35 @@ class AnchorsPlanner:
             explanations_reordered.append(exp_reordered)
             self.explanations = explanations_reordered
         
+        print(feature_names)
+        number_of_random_points = 10
+        number_of_explanations = 10
+        for n in range(number_of_explanations):
+            single_anchor = self.explanations[n]
+            print(f"anchor number {n}")
+            for i in range(number_of_random_points):
+                random_sample = np.zeros((1, feature_number))   
+                boundary_sample_a = np.zeros((1, feature_number))   
+                boundary_sample_b = np.zeros((1, feature_number))   
+
+                for k in single_anchor:
+                    #print(f"{k}: {single_anchor[k]}")
+                    a = max(single_anchor[k][0], 0)
+                    b = min(single_anchor[k][1], 100)
+                    rand = np.random.uniform(a, b)
+                    random_sample[0, feature_names.index(k)] = rand
+                    boundary_sample_a[0, feature_names.index(k)] = a
+                    boundary_sample_b[0, feature_names.index(k)] = b
+                    #print("Random sample:", random_sample)
+                    #print("Boundary sample a: ", boundary_sample_a)
+                    #print("Boundary sample b: ", boundary_sample_b)
+
+                probs = vecPredictProba(reqClassifiers, random_sample)
+                print(f"Sample {i} with probs: {probs}")
+                probs_boundary_a = vecPredictProba(reqClassifiers, boundary_sample_a)
+                print(f"Boundary sample a {i} with probs: {probs_boundary_a}")
+                probs_boundary_b = vecPredictProba(reqClassifiers, boundary_sample_b)
+                print(f"Boundary sample b {i} with probs: {probs_boundary_b}")
         #self.negative_explanations = self.create_negative_anchors(negatively_classified, datasets, self.reqClassifiers, req_number, explainer)
 
     def process_positive_sample(self,j, positively_classified, datasets, models, req_number):
