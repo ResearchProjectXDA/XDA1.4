@@ -1179,7 +1179,7 @@ class AnchorsPlanner:
         
     #     return best_sample
 
-    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=100):
+    def findBestAdaptation(self, sample, polytope, controllable_features, threshold=0.8, max_iter=50):
         delta_controllable_features = []
         #print("sample: ", sample)
         for i, f_name in enumerate(controllable_features):#define the delta for each interval
@@ -1188,15 +1188,13 @@ class AnchorsPlanner:
                 a = 0
             if b == inf:
                 b = 100
-            if (b-sample[i]) < (sample[i]-a):
-                delta = - (b-a) * 0.1 #We need to move backwards
-            else:
-                delta = (b-a) * 0.1 #We need to move forward
+            delta = (b-a) * 0.05
             delta_controllable_features.append(delta)
         #print("delta_controllable_features: ", delta_controllable_features)
         #print("Starting to find the best adaptation for the sample: ", sample)
         n_iter = 0
         min_prob = 0
+        best_avg_prob = 0
                 
         adapted_sample = sample
 
@@ -1239,13 +1237,17 @@ class AnchorsPlanner:
                 outOfBounds_feature_counter = 0
                 break
             
-            if (adapted_sample == current_max_adapted).all():
-                break #If we are not changing the adapted sample, we can stop
-            
-            adapted_sample = current_max_adapted.copy() #Reset the adapted sample to the best sample found so far
-            min_prob = curr_min_prob #Update the minimum probability found so far
-            #print(n_iter, " - Best sample so far: ", best_sample, " with highest avg probability: ", best_avg_prob, "at iteration: ", best_sample_iteration)
-            
+            replaced_flag = 1
+            if current_MAX_avg_prob >= best_avg_prob:
+                best_avg_prob = current_MAX_avg_prob
+                min_prob = curr_min_prob
+                adapted_sample = current_max_adapted.copy()
+                
+            else:
+                current_max_adapted = adapted_sample.copy() #Reset the adapted sample to the best sample found so far
+                for i, req in enumerate(controllable_features):
+                    delta_controllable_features[i] *= 2 # We increase the delta to explore more
+
         return adapted_sample
 
     def findBestAdaptationUsingNegatives(self, sample, polytope, controllable_features, threshold=0.8, max_iter=100):
