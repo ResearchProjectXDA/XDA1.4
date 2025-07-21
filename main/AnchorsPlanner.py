@@ -140,6 +140,10 @@ class AnchorsPlanner:
             for i in range(req_number):
                 #get the sample
                 sample = datasets[i].train[p_sample]
+
+                #confidence = reqClassifiers[i].predict_proba(sample.reshape(1, -1))[0][1]
+                #print(f"Sample {j+1} out of {len(positively_classified)} with confidence {confidence:.4f}")
+
                 #explain the sample
                 exp = explainer[i].explain_instance(sample, self.reqClassifiers[i].predict, threshold=0.95)
                 #get the textual explanation
@@ -173,35 +177,97 @@ class AnchorsPlanner:
             explanations_reordered.append(exp_reordered)
             self.explanations = explanations_reordered
         
-        print(feature_names)
-        number_of_random_points = 10
-        number_of_explanations = 10
-        for n in range(number_of_explanations):
-            single_anchor = self.explanations[n]
-            print(f"anchor number {n}")
-            for i in range(number_of_random_points):
-                random_sample = np.zeros((1, feature_number))   
-                boundary_sample_a = np.zeros((1, feature_number))   
-                boundary_sample_b = np.zeros((1, feature_number))   
+        # print(feature_names)
+        # number_of_random_points = 10
+        # number_of_explanations = 10
+        # for n in range(number_of_explanations):
+        #     single_anchor = self.explanations[n]
+        #     print(f"anchor number {n}")
+        #     for i in range(number_of_random_points):
+        #         random_sample = np.zeros((1, feature_number))   
+        #         boundary_sample_a = np.zeros((1, feature_number))   
+        #         boundary_sample_b = np.zeros((1, feature_number))   
 
-                for k in single_anchor:
-                    #print(f"{k}: {single_anchor[k]}")
-                    a = max(single_anchor[k][0], 0)
-                    b = min(single_anchor[k][1], 100)
-                    rand = np.random.uniform(a, b)
-                    random_sample[0, feature_names.index(k)] = rand
-                    boundary_sample_a[0, feature_names.index(k)] = a
-                    boundary_sample_b[0, feature_names.index(k)] = b
-                    #print("Random sample:", random_sample)
-                    #print("Boundary sample a: ", boundary_sample_a)
-                    #print("Boundary sample b: ", boundary_sample_b)
+        #         for k in single_anchor:
+        #             #print(f"{k}: {single_anchor[k]}")
+        #             a = max(single_anchor[k][0], 0)
+        #             b = min(single_anchor[k][1], 100)
+        #             rand = np.random.uniform(a, b)
+        #             random_sample[0, feature_names.index(k)] = rand
+        #             boundary_sample_a[0, feature_names.index(k)] = a
+        #             boundary_sample_b[0, feature_names.index(k)] = b
+        #             #print("Random sample:", random_sample)
+        #             #print("Boundary sample a: ", boundary_sample_a)
+        #             #print("Boundary sample b: ", boundary_sample_b)
 
-                probs = vecPredictProba(reqClassifiers, random_sample)
-                print(f"Sample {i} with probs: {probs}")
-                probs_boundary_a = vecPredictProba(reqClassifiers, boundary_sample_a)
-                print(f"Boundary sample a {i} with probs: {probs_boundary_a}")
-                probs_boundary_b = vecPredictProba(reqClassifiers, boundary_sample_b)
-                print(f"Boundary sample b {i} with probs: {probs_boundary_b}")
+        #         probs = vecPredictProba(reqClassifiers, random_sample)
+        #         print(f"Sample {i} with probs: {probs}")
+        #         probs_boundary_a = vecPredictProba(reqClassifiers, boundary_sample_a)
+        #         print(f"Boundary sample a {i} with probs: {probs_boundary_a}")
+        #         probs_boundary_b = vecPredictProba(reqClassifiers, boundary_sample_b)
+        #         print(f"Boundary sample b {i} with probs: {probs_boundary_b}")
+
+        n_samples = 1000
+        anchors_accuracies = []
+        anchors_output_accuracies = []
+        seed = 1234
+        np.random.seed(seed)  # Set the seed for reproducibility
+        probs_avg = np.zeros((1, 4))  # Initialize average probabilities array
+        coefficients_to_remove = []
+        for j, anchor in enumerate(explanations):
+            print(f"Anchor {j}: {anchor}")
+            samples = []
+            positives = 0
+            negatives = 0
+
+            positive_points = 0
+            negative_points = 0
+            for _ in range(n_samples):
+                sample = np.zeros(9)  # 8 dimensions + 1 for firm_obstacle
+                for i, k in enumerate(anchor):
+                    a = max(anchor[k][0], 0)
+                    b = min(anchor[k][1], 100)
+                    if i == 8:
+                        sample[i] = anchor[k][0]  # firm_obstacle as is
+                    else:
+                        sample[i] = np.random.uniform(a, b)
+                samples.append(sample)
+            for sample in samples:
+                #Predict th eoutput of those samples
+                output = np.zeros(req_number)
+                for i in range(req_number):
+                    output[i] = reqClassifiers[i].predict(np.array(sample).reshape(1, -1))
+                if np.all(output == 1):
+                    #print("Positive output!")
+                    positive_points += 1
+                else:
+                    print("output: ", output)
+                    print("Negative output!")
+                    negative_points += 1
+
+                probabilities = vecPredictProba(reqClassifiers, np.array(sample).reshape(1, -1))
+                probs_avg += probabilities
+                if np.all(probabilities > 0.5):
+                    positives += 1
+                else:
+                    negatives += 1
+            probs_avg /= n_samples
+            print(f"Average probabilities for anchor {j}: {probs_avg}")
+            if not(np.all(probs_avg > 0.5)):
+                print(f"Anchor {j} has average probabilities below 0.5, removing it...")
+                coefficients_to_remove.append(j)
+                
+            anchors_accuracies.append((positives)/(positives + negatives) * 100)
+            anchors_output_accuracies.append((positive_points)/(positive_points + negative_points) * 100)
+            print(f"Anchor: {j}, All positive probabilities: {positives}, All Negative probabilities: {negatives}")
+            print(f"Anchor Output: {j}, Positive Points: {positive_points}, Negative Points: {negative_points}")
+        print(anchors_accuracies)
+        print(anchors_output_accuracies)
+
+        # Remove anchors with average probabilities below 0.5
+        explanations = [explanations[i] for i in range(len(explanations)) if i not in coefficients_to_remove]
+        print(f"Removed {len(coefficients_to_remove)} anchors with average probabilities below 0.5, number of remaining anchors: {len(explanations)}")
+
         #self.negative_explanations = self.create_negative_anchors(negatively_classified, datasets, self.reqClassifiers, req_number, explainer)
 
     def process_positive_sample(self,j, positively_classified, datasets, models, req_number):
@@ -1117,9 +1183,9 @@ class AnchorsPlanner:
             # print("b: ", b)
             # print("x[j]: ", sample[i])
             if(sample[i] < int(a)):
-                sample[i] = int(a)+1
+                sample[i] = int(a)+ np.abs(b-a)/10
             elif(sample[i] > int(b)):
-                sample[i] = int(b)-1
+                sample[i] = int(b) - np.abs(b-a)/10
             #sample[i] = (a+b)/2
         return sample
 
