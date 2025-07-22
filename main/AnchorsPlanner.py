@@ -207,65 +207,58 @@ class AnchorsPlanner:
         #         probs_boundary_b = vecPredictProba(reqClassifiers, boundary_sample_b)
         #         print(f"Boundary sample b {i} with probs: {probs_boundary_b}")
 
-        n_samples = 1000
-        anchors_accuracies = []
-        anchors_output_accuracies = []
-        seed = 1234
-        np.random.seed(seed)  # Set the seed for reproducibility
-        probs_avg = np.zeros((1, 4))  # Initialize average probabilities array
+        print(feature_names)
+        number_of_random_points = 10
+        number_of_explanations = len(explanations_reordered)
+        print(f"Number of explanations: {number_of_explanations}")
+        req_confidences_sum = np.zeros((1, 4))  # Initialize the sum of probabilities for each requirement
         coefficients_to_remove = []
-        for j, anchor in enumerate(explanations):
-            print(f"Anchor {j}: {anchor}")
-            samples = []
-            positives = 0
-            negatives = 0
+        for n in range(number_of_explanations):
+            single_anchor_mean = np.zeros((1, 4))
+            single_anchor = explanations[n]
+            print(f"anchor number {n}")
+            
+            for i in range(number_of_random_points):
+                random_sample = np.zeros((1, feature_number))   
+                boundary_sample_a = np.zeros((1, feature_number))   
+                boundary_sample_b = np.zeros((1, feature_number))   
 
-            positive_points = 0
-            negative_points = 0
-            for _ in range(n_samples):
-                sample = np.zeros(9)  # 8 dimensions + 1 for firm_obstacle
-                for i, k in enumerate(anchor):
-                    a = max(anchor[k][0], 0)
-                    b = min(anchor[k][1], 100)
-                    if i == 8:
-                        sample[i] = anchor[k][0]  # firm_obstacle as is
-                    else:
-                        sample[i] = np.random.uniform(a, b)
-                samples.append(sample)
-            for sample in samples:
-                #Predict th eoutput of those samples
-                output = np.zeros(req_number)
-                for i in range(req_number):
-                    output[i] = reqClassifiers[i].predict(np.array(sample).reshape(1, -1))
-                if np.all(output == 1):
-                    #print("Positive output!")
-                    positive_points += 1
-                else:
-                    print("output: ", output)
-                    print("Negative output!")
-                    negative_points += 1
+                for k in single_anchor:
+                    #print(f"{k}: {single_anchor[k]}")
+                    a = max(single_anchor[k][0], 0)
+                    b = min(single_anchor[k][1], 100)
+                    rand = np.random.uniform(a, b)
+                    random_sample[0, feature_names.index(k)] = rand
+                    boundary_sample_a[0, feature_names.index(k)] = a
+                    boundary_sample_b[0, feature_names.index(k)] = b
+                    #print("Random sample:", random_sample)
+                    #print("Boundary sample a: ", boundary_sample_a)
+                    #print("Boundary sample b: ", boundary_sample_b)
 
-                probabilities = vecPredictProba(reqClassifiers, np.array(sample).reshape(1, -1))
-                probs_avg += probabilities
-                if np.all(probabilities > 0.5):
-                    positives += 1
-                else:
-                    negatives += 1
-            probs_avg /= n_samples
-            print(f"Average probabilities for anchor {j}: {probs_avg}")
-            if not(np.all(probs_avg > 0.5)):
-                print(f"Anchor {j} has average probabilities below 0.5, removing it...")
-                coefficients_to_remove.append(j)
-                
-            anchors_accuracies.append((positives)/(positives + negatives) * 100)
-            anchors_output_accuracies.append((positive_points)/(positive_points + negative_points) * 100)
-            print(f"Anchor: {j}, All positive probabilities: {positives}, All Negative probabilities: {negatives}")
-            print(f"Anchor Output: {j}, Positive Points: {positive_points}, Negative Points: {negative_points}")
-        print(anchors_accuracies)
-        print(anchors_output_accuracies)
+                probs = vecPredictProba(reqClassifiers, random_sample)
+                req_confidences_sum += probs
+                single_anchor_mean += probs
+                print(f"Sample {i} with probs: {probs}")
+            probs_boundary_a = vecPredictProba(reqClassifiers, boundary_sample_a)
+            single_anchor_mean += probs_boundary_a
+            print(f"Boundary sample {i} with probs: {probs_boundary_a}")
+            probs_boundary_b = vecPredictProba(reqClassifiers, boundary_sample_b)
+            single_anchor_mean += probs_boundary_b
+            print(f"Boundary sample {i} with probs: {probs_boundary_b}")
+            single_anchor_mean /= (number_of_random_points + 2)
+            print(f"Average probabilities for anchor {n}: {single_anchor_mean}")
+            if(np.any(single_anchor_mean < 0.5)):
+                print(f"Anchor {n} has average probabilities below 0.5, removing it")
+                coefficients_to_remove.append(n)
+
+        req_confidences_sum /= number_of_explanations * number_of_random_points
+        print("Average probabilities for each requirement over all explanations and random points:", req_confidences_sum)
+
+    
 
         # Remove anchors with average probabilities below 0.5
-        explanations = [explanations[i] for i in range(len(explanations)) if i not in coefficients_to_remove]
+        explanations_removed_negatives = [explanations[i] for i in range(len(explanations)) if i not in coefficients_to_remove]
+        explanations = explanations_removed_negatives
         print(f"Removed {len(coefficients_to_remove)} anchors with average probabilities below 0.5, number of remaining anchors: {len(explanations)}")
 
         #self.negative_explanations = self.create_negative_anchors(negatively_classified, datasets, self.reqClassifiers, req_number, explainer)
@@ -1290,6 +1283,7 @@ class AnchorsPlanner:
         n_iter = 0
         min_prob = 0
         best_avg_prob = 0
+        early_stopping_condition_counter = 0
                 
         adapted_sample = sample
 
@@ -1342,6 +1336,9 @@ class AnchorsPlanner:
                 current_max_adapted = adapted_sample.copy() #Reset the adapted sample to the best sample found so far
                 for i, req in enumerate(controllable_features):
                     delta_controllable_features[i] *= 2 # We increase the delta to explore more
+                early_stopping_condition_counter += 1
+                if early_stopping_condition_counter >= 25:
+                    break
 
         return adapted_sample
 
