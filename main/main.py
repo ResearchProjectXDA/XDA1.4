@@ -17,10 +17,8 @@ from FICustomPlanner import FICustomPlanner
 from util import vecPredictProba, evaluateAdaptations
 from FITEST import FitestPlanner
 from RandomCustomPlanner import RandomPlanner
-
-
-# import multilabel_oversampling as mo
-
+from imblearn.over_sampling import SMOTE, RandomOverSampler
+from multiSmote.multi_smote import MultiSmote as mlsmote
 
 # success score function (based on the signed distance with respect to the target success probabilities)
 def successScore(adaptation, reqClassifiers, targetSuccessProba):
@@ -108,38 +106,25 @@ if __name__ == '__main__':
     print(Fore.GREEN + "Number of positive samples for req_1: " + str(positives_req1.shape[0]) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of positive samples for req_2: " + str(positives_req2.shape[0]) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of positive samples for req_3: " + str(positives_req3.shape[0]) + Style.RESET_ALL)
-    # # Step 1: Extract 700 positives for each requirement
-    # positives_req0 = ds.loc[ds['req_0'] == 1].sample(n=700, random_state=42)
-    # positives_req1 = ds.loc[ds['req_1'] == 1].sample(n=700, random_state=42)
-    # positives_req2 = ds.loc[ds['req_2'] == 1].sample(n=700, random_state=42)
-    # positives_req3 = ds.loc[ds['req_3'] == 1].sample(n=700, random_state=42)
 
-    # print(Fore.GREEN + "Number of positive samples for req_0: " + str(positives_req0.shape[0]) + Style.RESET_ALL)
-    # print(Fore.GREEN + "Number of positive samples for req_1: " + str(positives_req1.shape[0]) + Style.RESET_ALL)
-    # print(Fore.GREEN + "Number of positive samples for req_2: " + str(positives_req2.shape[0]) + Style.RESET_ALL)
-    # print(Fore.GREEN + "Number of positive samples for req_3: " + str(positives_req3.shape[0]) + Style.RESET_ALL)
+    # Multilabel SMOTE
+    print(Fore.YELLOW + "\n[SMOTE] Applying MultiSmote to balance all requirements...\n" + Style.RESET_ALL)
 
-    # # Step 2: Combine forced positive samples
-    # forced_train_indices = positives_req0.index.union(positives_req1.index).union(positives_req2.index).union(positives_req3.index)
-    # forced_train = ds.loc[forced_train_indices]
+    smote = mlsmote()
+    X_train.columns = X_train.columns.astype(str)
+    y_train.columns = y_train.columns.astype(str)
 
-    # # Step 3: Remove forced training samples from the dataset
-    # remaining_ds = ds.drop(index=forced_train_indices)
+    X_resampled, y_resampled = smote.multi_smote(X_train.values, y_train.values)
 
-    # # Step 4: Split the remaining data into train/test (80/20)
-    # X_remaining = remaining_ds[featureNames]
-    # y_remaining = remaining_ds[reqs]
+    # Convert back to DataFrame for compatibility
+    X_train = pd.DataFrame(X_resampled, columns=featureNames)
+    y_train = pd.DataFrame(y_resampled, columns=reqs)
 
-    # X_rem_train, X_test, y_rem_train, y_test = train_test_split(
-    #     X_remaining, y_remaining, test_size=0.2, random_state=42
-    # )
-
-    # # Step 5: Merge forced positive samples into training set
-    # X_train = pd.concat([X_rem_train, forced_train[featureNames]], axis=0)
-    # y_train = pd.concat([y_rem_train, forced_train[reqs]], axis=0)
-
-    # print(Fore.GREEN + "Number of training samples: " + str(X_train.shape[0]) + Style.RESET_ALL)
-    # print(Fore.GREEN + "Number of test samples: " + str(X_test.shape[0]) + Style.RESET_ALL)
+    # Check the new balance
+    for i, req in enumerate(reqs):
+        positives = sum(y_train[req] == 1)
+        negatives = sum(y_train[req] == 0)
+        print(Fore.CYAN + f"After SMOTE - {req}: {positives} positives, {negatives} negatives" + Style.RESET_ALL)
 
     models = []
     for req in reqs:
