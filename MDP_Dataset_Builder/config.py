@@ -163,9 +163,17 @@ constraints_v1 = [
     low_contact_v3,
     low_crash_v3,
     safe_v3
+] 
+
+constraints = [
+        #test,
+    low_missclassification,
+    low_contact,
+    low_crash,
+    safe
 ]
 
-CONSTRAINTS = constraints_v3
+CONSTRAINTS = constraints
 
 # Load arguments from cli
 
