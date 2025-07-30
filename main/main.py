@@ -214,7 +214,7 @@ if __name__ == '__main__':
     for f in files:
         os.remove(f)
 
-    testNum = X_test.shape[0]
+    testNum = 5 #X_test.shape[0]
     outputs_anchors = np.zeros((testNum, n_reqs))
     outputs_PDP = np.zeros((testNum, n_reqs))
     outputs_NSGA = np.zeros((testNum, n_reqs))
@@ -231,24 +231,32 @@ if __name__ == '__main__':
                                  path + "/" + str(k) + "_" + req + "_starting")
         # Anchors adaptation test
         startTime = time.time()
-        customAdaptation, customConfidence, outputs = anchorsPlanner.evaluate_sample(row)
-        outputs_anchors[rowIndex, :] = customConfidence
+        customAdaptation_anchors, customConfidence_anchors, outputs = anchorsPlanner.evaluate_sample(row)
+        outputs_anchors[rowIndex, :] = customConfidence_anchors
         endTime = time.time()
-        customTime = endTime - startTime
+        customTime_anchors = endTime - startTime
 
-        if customAdaptation is not None:
+        if customAdaptation_anchors is not None:
+            #keep the features values between 0 and 100
+            for ad in range(len(customAdaptation_anchors)):
+                ca = customAdaptation_anchors[ad]
+                if ca>100:
+                    customAdaptation_anchors[ad] = 100
+                elif ca<0:
+                    customAdaptation_anchors[ad] = 0
+                    
             for i, req in enumerate(reqs):
-                lime.saveExplanation(lime.explain(limeExplainer, models[i], customAdaptation),
+                lime.saveExplanation(lime.explain(limeExplainer, models[i], customAdaptation_anchors),
                                      path + "/" + str(k) + "_" + req + "_final")
 
-            print("Best adaptation Anchors:                 " + str(customAdaptation[0:n_controllableFeatures]))
-            print("Model confidence:                " + str(customConfidence))
+            print("Best adaptation Anchors:                 " + str(customAdaptation_anchors[0:n_controllableFeatures]))
+            print("Model confidence:                " + str(customConfidence_anchors))
             #print("Adaptation score:                " + str(customScore) + " /" + str(1))
         else:
             print("No adaptation found")
             customScore = None
 
-        print("Anchors algorithm execution time: " + str(customTime) + " s")
+        print("Anchors algorithm execution time: " + str(customTime_anchors) + " s")
         print("-" * 100)
 
         # customPlanner adaptation test
@@ -257,6 +265,14 @@ if __name__ == '__main__':
         outputs_PDP[rowIndex, :] = customConfidence
         endTime = time.time()
         customTime = endTime - startTime
+
+        #keep the features values between 0 and 100
+        for ad in range(len(customAdaptation)):
+            ca = customAdaptation[ad]
+            if ca>100:
+                customAdaptation[ad] = 100
+            elif ca<0:
+                customAdaptation[ad] = 0
 
         if customAdaptation is not None:
             for i, req in enumerate(reqs):
@@ -368,6 +384,14 @@ if __name__ == '__main__':
         nsga3Time = endTime - startTime
         outputs_NSGA[rowIndex, :] = nsga3Confidence
 
+        #keep the features values between 0 and 100
+        for ad in range(len(nsga3Adaptation)):
+            ca = nsga3Adaptation[ad]
+            if ca>100:
+                nsga3Adaptation[ad] = 100
+            elif ca<0:
+                nsga3Adaptation[ad] = 0
+
         print("Best NSGA3 adaptation:           " + str(nsga3Adaptation[:n_controllableFeatures]))
         print("Model confidence:                " + str(nsga3Confidence))
         print("Adaptation score:                " + str(nsga3Score) + " /" + str(1))
@@ -375,10 +399,10 @@ if __name__ == '__main__':
 
         print("-" * 100)
         
-        resultsAnchors.append([customAdaptation,
-                               customConfidence,
+        resultsAnchors.append([customAdaptation_anchors,
+                               customConfidence_anchors,
                                customScore,
-                               customTime])
+                               customTime_anchors])
         
         results.append([customAdaptation,
                         customConfidence,
@@ -481,7 +505,7 @@ if __name__ == '__main__':
                                                            "custom_confidence",
                                                            "custom_score",
                                                            "custom_time"])
-    
+            
     results = pd.DataFrame(results, columns=["custom_adaptation",
                                              "custom_confidence",
                                              "custom_score",
