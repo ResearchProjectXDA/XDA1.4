@@ -1,4 +1,5 @@
 # Import for Construct Defect Models (Classification)
+from enum import unique
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -18,8 +19,18 @@ from sklearn.metrics import precision_score
 
 def constructModel(X_train, X_test, y_train, y_test, export=False):
 
+    #Use a loss function that accounts for class imbalance
+    unique, counts = np.unique(y_train, return_counts=True)
+    counter = dict(zip(unique, counts))
+    n_labels = len(y_train)
+
+    # The class weights are calculated as the ratio of the total number of labels to the count of each class, this way the less frequent class gets a higher weight
+    class_weights = {cls: n_labels / count for cls, count in counter.items()}
+    print("Class weights: ", class_weights)
+    print("Counter: ", counter)
+
     # Logistic Regression
-    lr_model = LogisticRegression(random_state=1234)
+    lr_model = LogisticRegression(random_state=1234, class_weight=class_weights)
     lr_model.fit(X_train, y_train)
     lr_model_AUC = round(roc_auc_score(y_test, lr_model.predict_proba(X_test)[:, 1]), 3)
     y_pred = lr_model.predict(X_test)
@@ -33,7 +44,7 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     print('Logistic Regression Precision score: ' + str(lr_model_precision))
 
     # Random Forests
-    rf_model = RandomForestClassifier(random_state=1234, n_jobs=10)
+    rf_model = RandomForestClassifier(random_state=1234, n_jobs=10, class_weight=class_weights)
     rf_model.fit(X_train, y_train)
     rf_model_AUC = round(roc_auc_score(y_test, rf_model.predict_proba(X_test)[:, 1]), 3)
     rf_model_f1 = round(f1_score(y_test, rf_model.predict(X_test)), 3)
@@ -46,7 +57,7 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     print('Random Forests Precision score: ' + str(rf_model_precision))
 
     # C5.0 (Decision Tree)
-    dt_model = DecisionTreeClassifier(random_state=1234)
+    dt_model = DecisionTreeClassifier(random_state=1234, class_weight=class_weights)
     dt_model.fit(X_train, y_train)
     dt_model_AUC = round(roc_auc_score(y_test, dt_model.predict_proba(X_test)[:, 1]), 3)
     dt_model_f1 = round(f1_score(y_test, dt_model.predict(X_test)), 3)
@@ -59,6 +70,7 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     print('C5.0 (Decision Tree) Precision score: ' + str(dt_model_precision))
 
     # Neural Network
+    # no class_weight and sample_weight for MLPClassifier as it does not support them
     nn_model = MLPClassifier(random_state=1234)
     nn_model.fit(X_train, y_train)
     nn_model_AUC = round(roc_auc_score(y_test, nn_model.predict_proba(X_test)[:, 1]), 3)
@@ -72,8 +84,12 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     print('Neural Network Precision score: ' + str(nn_model_precision))
 
     # Gradient Boosting Machine (GBM)
+    # Use sample weights to handle class imbalance since GradientBoostingClassifier does not support class_weight
+    sample_weights = np.array([class_weights[y] for y in y_train])
+
     gbm_model = GradientBoostingClassifier(random_state=1234)
-    gbm_model.fit(X_train, y_train)
+    gbm_model.fit(X_train, y_train, sample_weight=sample_weights)
+
     gbm_model_AUC = round(roc_auc_score(y_test, gbm_model.predict_proba(X_test)[:, 1]), 3)
     gbm_model_f1 = round(f1_score(y_test, gbm_model.predict(X_test)), 3)
     print('Gradient Boosting Machine (GBM) F1 score: ' + str(gbm_model_f1))
@@ -85,7 +101,10 @@ def constructModel(X_train, X_test, y_train, y_test, export=False):
     print('Gradient Boosting Machine (GBM) Precision score: ' + str(gbm_model_precision))
 
     # eXtreme Gradient Boosting Tree (xGBTree)
-    xgb_model = xgb.XGBClassifier(random_state=1234)
+    # Use scale_pos_weight to handle class imbalance since xgboost does not support class_weight nor sample_weight
+    scale_pos_weight = counter[0] / counter[1]
+
+    xgb_model = xgb.XGBClassifier(random_state=1234, scale_pos_weight=scale_pos_weight, use_label_encoder=False, eval_metric='logloss')
     xgb_model.fit(X_train, y_train)
     xgb_model_AUC = round(roc_auc_score(y_test, xgb_model.predict_proba(X_test)[:, 1]), 3)
     xgb_model_f1 = round(f1_score(y_test, xgb_model.predict(X_test)), 3)

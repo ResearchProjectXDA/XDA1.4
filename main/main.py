@@ -107,24 +107,24 @@ if __name__ == '__main__':
     print(Fore.GREEN + "Number of positive samples for req_2: " + str(positives_req2.shape[0]) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of positive samples for req_3: " + str(positives_req3.shape[0]) + Style.RESET_ALL)
 
-    # Multilabel SMOTE
-    print(Fore.YELLOW + "\n[SMOTE] Applying MultiSmote to balance all requirements...\n" + Style.RESET_ALL)
+    # # Multilabel SMOTE
+    # print(Fore.YELLOW + "\n[SMOTE] Applying MultiSmote to balance all requirements...\n" + Style.RESET_ALL)
 
-    smote = mlsmote()
-    X_train.columns = X_train.columns.astype(str)
-    y_train.columns = y_train.columns.astype(str)
+    # smote = mlsmote()
+    # X_train.columns = X_train.columns.astype(str)
+    # y_train.columns = y_train.columns.astype(str)
 
-    X_resampled, y_resampled = smote.multi_smote(X_train.values, y_train.values)
+    # X_resampled, y_resampled = smote.multi_smote(X_train.values, y_train.values)
 
-    # Convert back to DataFrame for compatibility
-    X_train = pd.DataFrame(X_resampled, columns=featureNames)
-    y_train = pd.DataFrame(y_resampled, columns=reqs)
+    # # Convert back to DataFrame for compatibility
+    # X_train = pd.DataFrame(X_resampled, columns=featureNames)
+    # y_train = pd.DataFrame(y_resampled, columns=reqs)
 
-    # Check the new balance
-    for i, req in enumerate(reqs):
-        positives = sum(y_train[req] == 1)
-        negatives = sum(y_train[req] == 0)
-        print(Fore.CYAN + f"After SMOTE - {req}: {positives} positives, {negatives} negatives" + Style.RESET_ALL)
+    # # Check the new balance
+    # for i, req in enumerate(reqs):
+    #     positives = sum(y_train[req] == 1)
+    #     negatives = sum(y_train[req] == 0)
+    #     print(Fore.CYAN + f"After SMOTE - {req}: {positives} positives, {negatives} negatives" + Style.RESET_ALL)
 
     models = []
     for req in reqs:
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     for f in files:
         os.remove(f)
 
-    testNum = 5 #X_test.shape[0]
+    testNum = 100 #X_test.shape[0]
     outputs_anchors = np.zeros((testNum, n_reqs))
     outputs_PDP = np.zeros((testNum, n_reqs))
     outputs_NSGA = np.zeros((testNum, n_reqs))
@@ -472,29 +472,35 @@ if __name__ == '__main__':
 
     
     #Metrics
+    num_well_classified_anchors = np.where(np.all(outputs_anchors >= 0.5, axis=1))[0].shape[0]
     num_misclassified_req0_anchors = np.where(outputs_anchors[:, 0] < 0.5)[0].shape[0]
     num_misclassified_req1_anchors = np.where(outputs_anchors[:, 1] < 0.5)[0].shape[0]
     num_misclassified_req2_anchors = np.where(outputs_anchors[:, 2] < 0.5)[0].shape[0]
     num_misclassified_req3_anchors = np.where(outputs_anchors[:, 3] < 0.5)[0].shape[0]
 
+    num_well_classified_custom = np.where(np.all(outputs_PDP >= 0.5, axis=1))[0].shape[0]
     num_misclassified_req0_custom = np.where(outputs_PDP[:, 0] < 0.5)[0].shape[0]
     num_misclassified_req1_custom = np.where(outputs_PDP[:, 1] < 0.5)[0].shape[0]
     num_misclassified_req2_custom = np.where(outputs_PDP[:, 2] < 0.5)[0].shape[0]
     num_misclassified_req3_custom = np.where(outputs_PDP[:, 3] < 0.5)[0].shape[0]
 
+    num_well_classified_nsga = np.where(np.all(outputs_NSGA >= 0.5, axis=1))[0].shape[0]
     num_misclassified_req0_nsga = np.where(outputs_NSGA[:, 0] < 0.5)[0].shape[0]
     num_misclassified_req1_nsga = np.where(outputs_NSGA[:, 1] < 0.5)[0].shape[0]
     num_misclassified_req2_nsga = np.where(outputs_NSGA[:, 2] < 0.5)[0].shape[0]
     num_misclassified_req3_nsga = np.where(outputs_NSGA[:, 3] < 0.5)[0].shape[0]
 
+    print(Fore.GREEN + "Number of well classified Anchors: " + str(num_well_classified_anchors) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req0 Anchors: " + str(num_misclassified_req0_anchors) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req1 Anchors: " + str(num_misclassified_req1_anchors) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req2 Anchors: " + str(num_misclassified_req2_anchors) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req3 Anchors: " + str(num_misclassified_req3_anchors) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of well classified Custom: " + str(num_well_classified_custom) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req0 Custom: " + str(num_misclassified_req0_custom) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req1 Custom: " + str(num_misclassified_req1_custom) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req2 Custom: " + str(num_misclassified_req2_custom) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req3 Custom: " + str(num_misclassified_req3_custom) + Style.RESET_ALL)
+    print(Fore.GREEN + "Number of well classified NSGA3: " + str(num_well_classified_nsga) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req0 NSGA3: " + str(num_misclassified_req0_nsga) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req1 NSGA3: " + str(num_misclassified_req1_nsga) + Style.RESET_ALL)
     print(Fore.GREEN + "Number of misclassified req2 NSGA3: " + str(num_misclassified_req2_nsga) + Style.RESET_ALL)
